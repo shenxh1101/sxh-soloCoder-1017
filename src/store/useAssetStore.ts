@@ -1,5 +1,17 @@
 import { create } from 'zustand'
-import type { Asset, ApprovalRecord, User, StatsOverview, AssetStatus, RecordType, InventoryTask } from '@/types/asset'
+import type { 
+  Asset, 
+  ApprovalRecord, 
+  User, 
+  StatsOverview, 
+  AssetStatus, 
+  RecordType, 
+  InventoryTask,
+  InventoryFilter,
+  InventoryAssetSnapshot,
+  InventoryReportSummary,
+  CreateInventoryTaskData
+} from '@/types/asset'
 import { mockAssets } from '@/data/mock-assets'
 import { mockApprovalRecords, inventoryTasks } from '@/data/mock-records'
 import { mockCurrentUser, mockUsers } from '@/data/mock-users'
@@ -22,6 +34,9 @@ interface AssetState {
   getAssetsByStatus: (status: AssetStatus) => Asset[]
   getOverdueAssets: () => Asset[]
   getDueSoonAssets: () => Asset[]
+  filterAssetsForInventory: (filter: InventoryFilter) => Asset[]
+  createAssetSnapshot: (assets: Asset[]) => InventoryAssetSnapshot[]
+  generateInventorySummary: (taskId: string) => InventoryReportSummary
   addAsset: (asset: Omit<Asset, 'id' | 'status' | 'images'>) => Asset
   updateAssetStatus: (id: string, status: AssetStatus, userId?: string, userName?: string) => void
   createApproval: (data: {
@@ -35,6 +50,7 @@ interface AssetState {
   approveApproval: (id: string, approverId: string, approverName: string) => void
   rejectApproval: (id: string, approverId: string, approverName: string, rejectReason: string) => void
   batchUpdateOwner: (assetIds: string[], userId: string, userName: string) => void
+  createInventoryTask: (data: CreateInventoryTaskData) => InventoryTask
   startInventoryTask: (taskId: string) => void
   checkInventoryAsset: (taskId: string, assetId: string) => void
   markInventoryMissing: (taskId: string, assetId: string) => void
@@ -258,6 +274,121 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     console.log('[AssetStore] 批量调整负责人:', { assetIds, userId, userName })
   },
 
+  filterAssetsForInventory: (filter: InventoryFilter): Asset[] => {
+    const { assets } = get()
+    return assets.filter(asset => {
+      if (!filter.includeScrap && asset.status === 'scrap') return false
+      if (filter.department && !asset.location.includes(filter.department)) return false
+      if (filter.location && asset.location !== filter.location) return false
+      if (filter.category && asset.category !== filter.category) return false
+      return true
+    })
+  },
+
+  createAssetSnapshot: (assets: Asset[]): InventoryAssetSnapshot[] => {
+    return assets.map(asset => ({
+      id: asset.id,
+      name: asset.name,
+      code: asset.code,
+      category: asset.category,
+      price: asset.price,
+      location: asset.location,
+      department: asset.location.split('-')[0] || '未分配',
+      currentUserId: asset.currentUserId,
+      currentUserName: asset.currentUserName,
+      status: asset.status
+    }))
+  },
+
+  generateInventorySummary: (taskId: string): InventoryReportSummary => {
+    const { getInventoryTaskById } = get()
+    const task = getInventoryTaskById(taskId)
+    if (!task || task.assetSnapshot.length === 0) {
+      return {
+        totalValue: 0,
+        checkedValue: 0,
+        missingValue: 0,
+        pendingValue: 0,
+        byDepartment: [],
+        byLocation: []
+      }
+    }
+
+    const { assetSnapshot, checkedAssets, missingAssets } = task
+    const totalValue = assetSnapshot.reduce((sum, a) => sum + a.price, 0)
+    const checkedValue = assetSnapshot.filter(a => checkedAssets.includes(a.id)).reduce((sum, a) => sum + a.price, 0)
+    const missingValue = assetSnapshot.filter(a => missingAssets.includes(a.id)).reduce((sum, a) => sum + a.price, 0)
+    const pendingValue = assetSnapshot.filter(a => !checkedAssets.includes(a.id) && !missingAssets.includes(a.id)).reduce((sum, a) => sum + a.price, 0)
+
+    const deptMap = new Map<string, InventoryAssetSnapshot[]>()
+    const locMap = new Map<string, InventoryAssetSnapshot[]>()
+
+    assetSnapshot.forEach(asset => {
+      if (!deptMap.has(asset.department)) {
+        deptMap.set(asset.department, [])
+      }
+      deptMap.get(asset.department)!.push(asset)
+
+      if (!locMap.has(asset.location)) {
+        locMap.set(asset.location, [])
+      }
+      locMap.get(asset.location)!.push(asset)
+    })
+
+    const byDepartment = Array.from(deptMap.entries()).map(([name, assets]) => ({
+      name,
+      count: assets.length,
+      totalValue: assets.reduce((sum, a) => sum + a.price, 0),
+      assets
+    }))
+
+    const byLocation = Array.from(locMap.entries()).map(([name, assets]) => ({
+      name,
+      count: assets.length,
+      totalValue: assets.reduce((sum, a) => sum + a.price, 0),
+      assets
+    }))
+
+    return {
+      totalValue,
+      checkedValue,
+      missingValue,
+      pendingValue,
+      byDepartment,
+      byLocation
+    }
+  },
+
+  createInventoryTask: (data: CreateInventoryTaskData): InventoryTask => {
+    const { filterAssetsForInventory, createAssetSnapshot, currentUser } = get()
+    const filteredAssets = filterAssetsForInventory(data.filter)
+    const assetSnapshot = createAssetSnapshot(filteredAssets)
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19)
+
+    const newTask: InventoryTask = {
+      id: generateId(),
+      name: data.name,
+      description: data.description,
+      creatorId: currentUser.id,
+      creatorName: currentUser.name,
+      filter: data.filter,
+      totalAssets: assetSnapshot.length,
+      checkedAssets: [],
+      missingAssets: [],
+      status: 'pending',
+      createTime: now,
+      progress: 0,
+      assetSnapshot
+    }
+
+    set(state => ({
+      inventoryTasks: [newTask, ...state.inventoryTasks]
+    }))
+
+    console.log('[AssetStore] 创建盘点任务:', { taskId: newTask.id, name: newTask.name, assetCount: assetSnapshot.length })
+    return newTask
+  },
+
   getInventoryTaskById: (id: string): InventoryTask | undefined => {
     return get().inventoryTasks.find(t => t.id === id)
   },
@@ -287,7 +418,6 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       if (!task) return state
 
       const isAlreadyChecked = task.checkedAssets.includes(assetId)
-      const isInMissing = task.missingAssets.includes(assetId)
 
       let newCheckedAssets
       let newMissingAssets
@@ -357,7 +487,9 @@ export const useAssetStore = create<AssetState>((set, get) => ({
   },
 
   completeInventoryTask: (taskId: string): void => {
+    const { generateInventorySummary } = get()
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19)
+    const summary = generateInventorySummary(taskId)
     set(state => ({
       inventoryTasks: state.inventoryTasks.map(task =>
         task.id === taskId
@@ -365,11 +497,12 @@ export const useAssetStore = create<AssetState>((set, get) => ({
               ...task,
               status: 'completed',
               completeTime: now,
-              progress: 100
+              progress: 100,
+              summary
             }
           : task
       )
     }))
-    console.log('[AssetStore] 完成盘点任务:', taskId)
+    console.log('[AssetStore] 完成盘点任务:', taskId, '汇总数据已生成')
   }
 }))

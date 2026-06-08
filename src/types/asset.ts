@@ -71,12 +71,49 @@ export interface AssetRecord {
   createTime: string
 }
 
+export interface InventoryFilter {
+  department?: string
+  location?: string
+  category?: string
+  includeScrap: boolean
+}
+
+export interface InventoryAssetSnapshot {
+  id: string
+  name: string
+  code: string
+  category: string
+  price: number
+  location: string
+  department: string
+  currentUserId?: string
+  currentUserName?: string
+  status: AssetStatus
+}
+
+export interface InventorySummaryItem {
+  name: string
+  count: number
+  totalValue: number
+  assets: InventoryAssetSnapshot[]
+}
+
+export interface InventoryReportSummary {
+  totalValue: number
+  checkedValue: number
+  missingValue: number
+  pendingValue: number
+  byDepartment: InventorySummaryItem[]
+  byLocation: InventorySummaryItem[]
+}
+
 export interface InventoryTask {
   id: string
   name: string
   description: string
   creatorId: string
   creatorName: string
+  filter: InventoryFilter
   totalAssets: number
   checkedAssets: string[]
   missingAssets: string[]
@@ -85,12 +122,20 @@ export interface InventoryTask {
   startTime?: string
   completeTime?: string
   progress: number
+  assetSnapshot: InventoryAssetSnapshot[]
+  summary?: InventoryReportSummary
 }
 
 export interface InventoryTaskUpdate {
   taskId: string
   checkedAssetIds: string[]
   missingAssetIds: string[]
+}
+
+export interface CreateInventoryTaskData {
+  name: string
+  description: string
+  filter: InventoryFilter
 }
 
 export interface StatsOverview {

@@ -1,4 +1,5 @@
 import type { ApprovalRecord, AssetRecord, InventoryTask } from '@/types/asset'
+import { mockAssets } from './mock-assets'
 
 export const mockApprovalRecords: ApprovalRecord[] = [
   {
@@ -165,6 +166,34 @@ export const mockAssetRecords: AssetRecord[] = [
   }
 ]
 
+const filterAssets = (assets: any[], filter: any) => {
+  return assets.filter(asset => {
+    if (!filter.includeScrap && asset.status === 'scrap') return false
+    if (filter.department && !asset.location.includes(filter.department)) return false
+    if (filter.location && asset.location !== filter.location) return false
+    if (filter.category && asset.category !== filter.category) return false
+    return true
+  })
+}
+
+const createAssetSnapshot = (assets: any[]) => {
+  return assets.map(asset => ({
+    id: asset.id,
+    name: asset.name,
+    code: asset.code,
+    category: asset.category,
+    price: asset.price,
+    location: asset.location,
+    department: asset.location.split('-')[0] || '未分配',
+    currentUserId: asset.currentUserId,
+    currentUserName: asset.currentUserName,
+    status: asset.status
+  }))
+}
+
+const fullFilter = { includeScrap: false }
+const deptFilter = { department: '研发部', includeScrap: false }
+
 export const inventoryTasks: InventoryTask[] = [
   {
     id: '1',
@@ -172,13 +201,15 @@ export const inventoryTasks: InventoryTask[] = [
     description: '全公司季度资产盘点，确保账实相符',
     creatorId: '6',
     creatorName: '孙八',
-    totalAssets: 12,
-    checkedAssets: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+    filter: fullFilter,
+    totalAssets: 11,
+    checkedAssets: ['1', '2', '3', '4', '5', '6', '7', '9', '10', '11'],
     missingAssets: ['12'],
-    progress: 75,
+    progress: 100,
     status: 'inProgress',
     createTime: '2024-06-01 00:00:00',
-    startTime: '2024-06-01 09:00:00'
+    startTime: '2024-06-01 09:00:00',
+    assetSnapshot: createAssetSnapshot(filterAssets(mockAssets, fullFilter))
   },
   {
     id: '2',
@@ -186,14 +217,28 @@ export const inventoryTasks: InventoryTask[] = [
     description: '研发部门电子设备专项盘点',
     creatorId: '1',
     creatorName: '张三',
-    totalAssets: 6,
-    checkedAssets: ['1', '2', '8', '11', '12', '7'],
+    filter: deptFilter,
+    totalAssets: 2,
+    checkedAssets: ['1', '12'],
     missingAssets: [],
     progress: 100,
     status: 'completed',
     createTime: '2024-05-15 00:00:00',
     startTime: '2024-05-15 09:00:00',
-    completeTime: '2024-05-15 17:00:00'
+    completeTime: '2024-05-15 17:00:00',
+    assetSnapshot: createAssetSnapshot(filterAssets(mockAssets, deptFilter)),
+    summary: {
+      totalValue: 17598,
+      checkedValue: 17598,
+      missingValue: 0,
+      pendingValue: 0,
+      byDepartment: [
+        { name: '研发部', count: 2, totalValue: 17598, assets: [] }
+      ],
+      byLocation: [
+        { name: '研发部-3楼-A区', count: 2, totalValue: 17598, assets: [] }
+      ]
+    }
   },
   {
     id: '3',
@@ -201,14 +246,42 @@ export const inventoryTasks: InventoryTask[] = [
     description: '第一季度全公司资产盘点',
     creatorId: '6',
     creatorName: '孙八',
-    totalAssets: 10,
-    checkedAssets: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
+    filter: fullFilter,
+    totalAssets: 11,
+    checkedAssets: ['1', '2', '3', '4', '5', '6', '7', '9', '10', '11', '12'],
     missingAssets: [],
     progress: 100,
     status: 'completed',
     createTime: '2024-04-01 00:00:00',
     startTime: '2024-04-01 09:00:00',
-    completeTime: '2024-04-02 17:00:00'
+    completeTime: '2024-04-02 17:00:00',
+    assetSnapshot: createAssetSnapshot(filterAssets(mockAssets, fullFilter)),
+    summary: {
+      totalValue: 123277,
+      checkedValue: 123277,
+      missingValue: 0,
+      pendingValue: 0,
+      byDepartment: [
+        { name: '研发部', count: 2, totalValue: 17598, assets: [] },
+        { name: '市场部', count: 4, totalValue: 55085, assets: [] },
+        { name: '设计部', count: 2, totalValue: 22298, assets: [] },
+        { name: '销售部', count: 1, totalValue: 8999, assets: [] },
+        { name: '行政部', count: 1, totalValue: 2599, assets: [] },
+        { name: '机房', count: 1, totalValue: 8999, assets: [] }
+      ],
+      byLocation: [
+        { name: '研发部-3楼-A区', count: 2, totalValue: 17598, assets: [] },
+        { name: '市场部-2楼-B区', count: 1, totalValue: 3299, assets: [] },
+        { name: '设计部-4楼-A区', count: 2, totalValue: 22298, assets: [] },
+        { name: '销售部-1楼-A区', count: 1, totalValue: 8999, assets: [] },
+        { name: '行政部-1楼-公共区', count: 1, totalValue: 2599, assets: [] },
+        { name: '市场部-设备室', count: 1, totalValue: 16999, assets: [] },
+        { name: '会议室A-3楼', count: 1, totalValue: 12999, assets: [] },
+        { name: '设计部-设备柜', count: 1, totalValue: 9299, assets: [] },
+        { name: '市场部-外拍中', count: 1, totalValue: 21888, assets: [] },
+        { name: '机房-2楼', count: 1, totalValue: 8999, assets: [] }
+      ]
+    }
   }
 ]
 

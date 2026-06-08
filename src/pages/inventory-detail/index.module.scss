@@ -55,6 +55,13 @@
   color: $color-text-secondary;
 }
 
+.statSubLabel {
+  font-size: 20px;
+  color: $color-text-placeholder;
+  margin-top: 4px;
+  display: block;
+}
+
 .progressSection {
   display: flex;
   align-items: center;
@@ -424,4 +431,116 @@
   font-size: 32px;
   color: #86909C;
   font-weight: 600;
+}
+
+.summaryTabBar {
+  display: flex;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.summaryTab {
+  flex: 1;
+  padding: 20px 24px;
+  background: #fff;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 26px;
+  color: $color-text-secondary;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+
+  &.summaryTabActive {
+    border-color: $color-primary;
+    color: $color-primary;
+    background: rgba(#165DFF, 0.05);
+  }
+}
+
+.summarySection {
+  margin-top: 24px;
+}
+
+.summaryGroup {
+  background: #fff;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.summaryGroupHeader {
+  display: flex;
+  align-items: center;
+  padding: 24px;
+  background: #F7F8FA;
+  border-bottom: 1px solid #F2F3F5;
+}
+
+.summaryGroupInfo {
+  flex: 1;
+}
+
+.summaryGroupName {
+  font-size: 28px;
+  font-weight: 600;
+  color: $color-text-primary;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.summaryGroupCount {
+  font-size: 24px;
+  color: $color-text-secondary;
+}
+
+.summaryGroupStats {
+  display: flex;
+  align-items: center;
+  font-size: 24px;
+  font-weight: 500;
+  margin-right: 16px;
+}
+
+.summaryArrow {
+  font-size: 24px;
+  color: $color-text-secondary;
+}
+
+.summaryGroupContent {
+  padding: 16px 24px;
+}
+
+.summaryAssetItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid #F2F3F5;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.summaryAssetInfo {
+  flex: 1;
+}
+
+.summaryAssetName {
+  font-size: 26px;
+  color: $color-text-primary;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.summaryAssetCode {
+  font-size: 22px;
+  color: $color-text-secondary;
+}
+
+.summaryAssetPrice {
+  font-size: 24px;
+  color: $color-primary;
+  font-weight: 500;
+  margin-top: 4px;
 }

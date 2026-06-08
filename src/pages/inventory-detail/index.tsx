@@ -5,17 +5,17 @@ import classnames from 'classnames'
 import { useAssetStore } from '@/store/useAssetStore'
 import StatusTag from '@/components/StatusTag'
 import EmptyState from '@/components/EmptyState'
-import type { Asset } from '@/types/asset'
-import { formatPrice, formatDate, formatDateTime } from '@/utils/format'
+import type { InventoryAssetSnapshot } from '@/types/asset'
+import { formatPrice, formatDateTime } from '@/utils/format'
 import { handleAssetScan } from '@/utils/scan'
 import styles from './index.module.scss'
 
 const InventoryDetailPage: React.FC = () => {
   const router = useRouter()
   const taskId = router.params.id || ''
+  const autoShowReport = router.params.report === '1'
 
   const {
-    assets,
     getInventoryTaskById,
     currentUser,
     startInventoryTask,
@@ -25,30 +25,35 @@ const InventoryDetailPage: React.FC = () => {
   } = useAssetStore()
 
   const task = getInventoryTaskById(taskId)
-  const [showReport, setShowReport] = useState(false)
+  const [showReport, setShowReport] = useState(autoShowReport && task?.status === 'completed')
   const [filterType, setFilterType] = useState<'all' | 'checked' | 'missing' | 'pending'>('all')
   const [searchKeyword, setSearchKeyword] = useState('')
+  const [expandedDepts, setExpandedDepts] = useState<Set<string>>(new Set())
+  const [expandedLocs, setExpandedLocs] = useState<Set<string>>(new Set())
+  const [summaryView, setSummaryView] = useState<'department' | 'location' | 'none'>('none')
 
   useEffect(() => {
-    console.log('[InventoryDetailPage] 盘点详情:', taskId, '任务:', task?.name)
+    console.log('[InventoryDetailPage] 盘点详情:', taskId, '任务:', task?.name, 'autoShowReport:', autoShowReport)
     if (!task) {
       Taro.showToast({ title: '盘点任务不存在', icon: 'none' })
     }
-  }, [taskId, task])
+    if (autoShowReport && task?.status === 'completed') {
+      setShowReport(true)
+    }
+  }, [taskId, task, autoShowReport])
 
   if (!task) {
     return <View className={styles.page} />
   }
 
+  const snapshotAssets = task.assetSnapshot
   const isCompleted = task.status === 'completed'
   const isPending = task.status === 'pending'
   const checkedCount = task.checkedAssets.length
   const missingCount = task.missingAssets.length
   const pendingCount = task.totalAssets - checkedCount - missingCount
 
-  const filteredAssets = assets.filter(asset => {
-    if (asset.status === 'scrap') return false
-
+  const filteredAssets = snapshotAssets.filter(asset => {
     if (searchKeyword) {
       const keyword = searchKeyword.toLowerCase()
       if (!asset.name.toLowerCase().includes(keyword) &&
@@ -82,21 +87,23 @@ const InventoryDetailPage: React.FC = () => {
       return
     }
     handleAssetScan(
-      (assetId, assetData) => {
-        const asset = assets.find(a => a.id === assetId)
-        if (asset) {
-          const isChecked = task.checkedAssets.includes(assetId)
-          const isMissing = task.missingAssets.includes(assetId)
-          
-          if (isChecked) {
-            Taro.showToast({ title: '该资产已盘点', icon: 'none' })
+      (assetId, _assetData) => {
+        const asset = snapshotAssets.find(a => a.id === assetId)
+        if (!asset) {
+          Taro.showToast({ title: '该资产不在本次盘点范围内', icon: 'none' })
+          return
+        }
+        const isChecked = task.checkedAssets.includes(assetId)
+        const isMissing = task.missingAssets.includes(assetId)
+        
+        if (isChecked) {
+          Taro.showToast({ title: '该资产已盘点', icon: 'none' })
+        } else {
+          checkInventoryAsset(taskId, assetId)
+          if (isMissing) {
+            Taro.showToast({ title: `已从缺失转为已盘: ${asset.name}`, icon: 'success' })
           } else {
-            checkInventoryAsset(taskId, assetId)
-            if (isMissing) {
-              Taro.showToast({ title: `已从缺失转为已盘: ${asset.name}`, icon: 'success' })
-            } else {
-              Taro.showToast({ title: `已盘点: ${asset.name}`, icon: 'success' })
-            }
+            Taro.showToast({ title: `已盘点: ${asset.name}`, icon: 'success' })
           }
         }
       }
@@ -112,7 +119,7 @@ const InventoryDetailPage: React.FC = () => {
     e.stopPropagation?.()
     if (isCompleted) return
     markInventoryMissing(taskId, assetId)
-    const asset = assets.find(a => a.id === assetId)
+    const asset = snapshotAssets.find(a => a.id === assetId)
     Taro.showToast({
       title: task.missingAssets.includes(assetId) ? '已取消标记' : `已标记缺失: ${asset?.name}`,
       icon: 'none'
@@ -149,11 +156,78 @@ const InventoryDetailPage: React.FC = () => {
   ]
 
   if (showReport) {
-    const pendingAssets = assets.filter(asset => 
-      asset.status !== 'scrap' && 
+    const pendingAssets = snapshotAssets.filter(asset => 
       !task.checkedAssets.includes(asset.id) && 
       !task.missingAssets.includes(asset.id)
     )
+
+    const checkedAssets = snapshotAssets.filter(asset => task.checkedAssets.includes(asset.id))
+    const missingAssets = snapshotAssets.filter(asset => task.missingAssets.includes(asset.id))
+
+    const totalValue = snapshotAssets.reduce((sum, a) => sum + a.price, 0)
+    const checkedValue = checkedAssets.reduce((sum, a) => sum + a.price, 0)
+    const missingValue = missingAssets.reduce((sum, a) => sum + a.price, 0)
+    const pendingValue = pendingAssets.reduce((sum, a) => sum + a.price, 0)
+
+    const deptMap = new Map<string, InventoryAssetSnapshot[]>()
+    snapshotAssets.forEach(asset => {
+      if (!deptMap.has(asset.department)) {
+        deptMap.set(asset.department, [])
+      }
+      deptMap.get(asset.department)!.push(asset)
+    })
+    const byDepartment = Array.from(deptMap.entries()).map(([name, assets]) => ({
+      name,
+      count: assets.length,
+      totalValue: assets.reduce((sum, a) => sum + a.price, 0),
+      checkedCount: assets.filter(a => task.checkedAssets.includes(a.id)).length,
+      missingCount: assets.filter(a => task.missingAssets.includes(a.id)).length,
+      pendingCount: assets.filter(a => !task.checkedAssets.includes(a.id) && !task.missingAssets.includes(a.id)).length,
+      assets
+    }))
+
+    const locMap = new Map<string, InventoryAssetSnapshot[]>()
+    snapshotAssets.forEach(asset => {
+      if (!locMap.has(asset.location)) {
+        locMap.set(asset.location, [])
+      }
+      locMap.get(asset.location)!.push(asset)
+    })
+    const byLocation = Array.from(locMap.entries()).map(([name, assets]) => ({
+      name,
+      count: assets.length,
+      totalValue: assets.reduce((sum, a) => sum + a.price, 0),
+      checkedCount: assets.filter(a => task.checkedAssets.includes(a.id)).length,
+      missingCount: assets.filter(a => task.missingAssets.includes(a.id)).length,
+      pendingCount: assets.filter(a => !task.checkedAssets.includes(a.id) && !task.missingAssets.includes(a.id)).length,
+      assets
+    }))
+
+    const toggleDept = (name: string) => {
+      const newSet = new Set(expandedDepts)
+      if (newSet.has(name)) {
+        newSet.delete(name)
+      } else {
+        newSet.add(name)
+      }
+      setExpandedDepts(newSet)
+    }
+
+    const toggleLoc = (name: string) => {
+      const newSet = new Set(expandedLocs)
+      if (newSet.has(name)) {
+        newSet.delete(name)
+      } else {
+        newSet.add(name)
+      }
+      setExpandedLocs(newSet)
+    }
+
+    const getAssetResult = (assetId: string) => {
+      if (task.checkedAssets.includes(assetId)) return { text: '已盘', color: '#00B42A' }
+      if (task.missingAssets.includes(assetId)) return { text: '缺失', color: '#F53F3F' }
+      return { text: '待盘', color: '#86909C' }
+    }
 
     return (
       <ScrollView scrollY className={styles.page}>
@@ -191,18 +265,22 @@ const InventoryDetailPage: React.FC = () => {
             <View className={styles.statItem}>
               <Text className={styles.statValue} style={{ color: '#165DFF' }}>{task.totalAssets}</Text>
               <Text className={styles.statLabel}>应盘资产</Text>
+              <Text className={styles.statSubLabel}>{formatPrice(totalValue)}</Text>
             </View>
             <View className={styles.statItem}>
               <Text className={styles.statValue} style={{ color: '#00B42A' }}>{checkedCount}</Text>
               <Text className={styles.statLabel}>已盘</Text>
+              <Text className={styles.statSubLabel} style={{ color: '#00B42A' }}>{formatPrice(checkedValue)}</Text>
             </View>
             <View className={styles.statItem}>
               <Text className={styles.statValue} style={{ color: '#F53F3F' }}>{missingCount}</Text>
               <Text className={styles.statLabel}>缺失</Text>
+              <Text className={styles.statSubLabel} style={{ color: '#F53F3F' }}>{formatPrice(missingValue)}</Text>
             </View>
             <View className={styles.statItem}>
               <Text className={styles.statValue} style={{ color: '#86909C' }}>{pendingCount}</Text>
               <Text className={styles.statLabel}>待盘</Text>
+              <Text className={styles.statSubLabel} style={{ color: '#86909C' }}>{formatPrice(pendingValue)}</Text>
             </View>
           </View>
 
@@ -217,41 +295,144 @@ const InventoryDetailPage: React.FC = () => {
             <Text className={styles.progressText}>{task.progress}%</Text>
           </View>
 
+          <View className={styles.summaryTabBar}>
+            <View
+              className={classnames(styles.summaryTab, summaryView === 'department' && styles.summaryTabActive)}
+              onClick={() => setSummaryView(summaryView === 'department' ? 'none' : 'department')}
+            >
+              <Text>📊 按部门汇总</Text>
+            </View>
+            <View
+              className={classnames(styles.summaryTab, summaryView === 'location' && styles.summaryTabActive)}
+              onClick={() => setSummaryView(summaryView === 'location' ? 'none' : 'location')}
+            >
+              <Text>📍 按位置汇总</Text>
+            </View>
+          </View>
+
+          {summaryView === 'department' && (
+            <View className={styles.summarySection}>
+              {byDepartment.map(item => (
+                <View key={item.name} className={styles.summaryGroup}>
+                  <View className={styles.summaryGroupHeader} onClick={() => toggleDept(item.name)}>
+                    <View className={styles.summaryGroupInfo}>
+                      <Text className={styles.summaryGroupName}>{item.name}</Text>
+                      <Text className={styles.summaryGroupCount}>
+                        {item.count}件 / {formatPrice(item.totalValue)}
+                      </Text>
+                    </View>
+                    <View className={styles.summaryGroupStats}>
+                      <Text style={{ color: '#00B42A' }}>{item.checkedCount}✓</Text>
+                      <Text style={{ color: '#F53F3F', marginLeft: 12 }}>{item.missingCount}✗</Text>
+                      <Text style={{ color: '#86909C', marginLeft: 12 }}>{item.pendingCount}○</Text>
+                    </View>
+                    <Text className={styles.summaryArrow}>
+                      {expandedDepts.has(item.name) ? '▲' : '▼'}
+                    </Text>
+                  </View>
+                  {expandedDepts.has(item.name) && (
+                    <View className={styles.summaryGroupContent}>
+                      {item.assets.map(asset => {
+                        const result = getAssetResult(asset.id)
+                        return (
+                          <View key={asset.id} className={styles.summaryAssetItem}>
+                            <View className={styles.summaryAssetInfo}>
+                              <Text className={styles.summaryAssetName}>{asset.name}</Text>
+                              <Text className={styles.summaryAssetCode}>{asset.code}</Text>
+                            </View>
+                            <View style={{ flexDirection: 'column', alignItems: 'flex-end' }}>
+                              <Text style={{ color: result.color, fontSize: 24 }}>{result.text}</Text>
+                              <Text className={styles.summaryAssetPrice}>{formatPrice(asset.price)}</Text>
+                            </View>
+                          </View>
+                        )
+                      })}
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+
+          {summaryView === 'location' && (
+            <View className={styles.summarySection}>
+              {byLocation.map(item => (
+                <View key={item.name} className={styles.summaryGroup}>
+                  <View className={styles.summaryGroupHeader} onClick={() => toggleLoc(item.name)}>
+                    <View className={styles.summaryGroupInfo}>
+                      <Text className={styles.summaryGroupName}>{item.name}</Text>
+                      <Text className={styles.summaryGroupCount}>
+                        {item.count}件 / {formatPrice(item.totalValue)}
+                      </Text>
+                    </View>
+                    <View className={styles.summaryGroupStats}>
+                      <Text style={{ color: '#00B42A' }}>{item.checkedCount}✓</Text>
+                      <Text style={{ color: '#F53F3F', marginLeft: 12 }}>{item.missingCount}✗</Text>
+                      <Text style={{ color: '#86909C', marginLeft: 12 }}>{item.pendingCount}○</Text>
+                    </View>
+                    <Text className={styles.summaryArrow}>
+                      {expandedLocs.has(item.name) ? '▲' : '▼'}
+                    </Text>
+                  </View>
+                  {expandedLocs.has(item.name) && (
+                    <View className={styles.summaryGroupContent}>
+                      {item.assets.map(asset => {
+                        const result = getAssetResult(asset.id)
+                        return (
+                          <View key={asset.id} className={styles.summaryAssetItem}>
+                            <View className={styles.summaryAssetInfo}>
+                              <Text className={styles.summaryAssetName}>{asset.name}</Text>
+                              <Text className={styles.summaryAssetCode}>{asset.code}</Text>
+                            </View>
+                            <View style={{ flexDirection: 'column', alignItems: 'flex-end' }}>
+                              <Text style={{ color: result.color, fontSize: 24 }}>{result.text}</Text>
+                              <Text className={styles.summaryAssetPrice}>{formatPrice(asset.price)}</Text>
+                            </View>
+                          </View>
+                        )
+                      })}
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+
           {missingCount > 0 && (
             <View className={styles.missingSection}>
               <Text className={styles.sectionTitle}>缺失资产清单 ({missingCount})</Text>
-              {task.missingAssets.map(assetId => {
-                const asset = assets.find(a => a.id === assetId)
-                if (!asset) return null
-                return (
-                  <View key={asset.id} className={styles.missingItem}>
-                    <View className={styles.missingInfo}>
-                      <Text className={styles.missingName}>{asset.name}</Text>
-                      <Text className={styles.missingCode}>{asset.code}</Text>
-                    </View>
-                    <Text className={styles.missingValue}>{formatPrice(asset.price)}</Text>
+              {missingAssets.map(asset => (
+                <View key={asset.id} className={styles.missingItem}>
+                  <View className={styles.missingInfo}>
+                    <Text className={styles.missingName}>{asset.name}</Text>
+                    <Text className={styles.missingCode}>{asset.code}</Text>
+                    <Text style={{ fontSize: 22, color: '#86909C' }}>
+                      {asset.department} · {asset.location}
+                      {asset.currentUserName ? ` · ${asset.currentUserName}` : ''}
+                    </Text>
                   </View>
-                )
-              })}
+                  <Text className={styles.missingValue}>{formatPrice(asset.price)}</Text>
+                </View>
+              ))}
             </View>
           )}
 
           {checkedCount > 0 && (
             <View className={styles.checkedSection}>
               <Text className={styles.sectionTitle}>已盘点资产 ({checkedCount})</Text>
-              {task.checkedAssets.map(assetId => {
-                const asset = assets.find(a => a.id === assetId)
-                if (!asset) return null
-                return (
-                  <View key={asset.id} className={styles.checkedItem}>
-                    <View className={styles.checkedInfo}>
-                      <Text className={styles.checkedName}>{asset.name}</Text>
-                      <Text className={styles.checkedCode}>{asset.code}</Text>
-                    </View>
-                    <Text className={styles.checkedValue}>✓</Text>
+              {checkedAssets.map(asset => (
+                <View key={asset.id} className={styles.checkedItem}>
+                  <View className={styles.checkedInfo}>
+                    <Text className={styles.checkedName}>{asset.name}</Text>
+                    <Text className={styles.checkedCode}>{asset.code}</Text>
+                    <Text style={{ fontSize: 22, color: '#86909C' }}>
+                      {asset.department} · {asset.location}
+                      {asset.currentUserName ? ` · ${asset.currentUserName}` : ''}
+                    </Text>
                   </View>
-                )
-              })}
+                  <Text className={styles.checkedValue}>✓</Text>
+                </View>
+              ))}
             </View>
           )}
 
@@ -263,6 +444,10 @@ const InventoryDetailPage: React.FC = () => {
                   <View className={styles.pendingInfo}>
                     <Text className={styles.pendingName}>{asset.name}</Text>
                     <Text className={styles.pendingCode}>{asset.code}</Text>
+                    <Text style={{ fontSize: 22, color: '#86909C' }}>
+                      {asset.department} · {asset.location}
+                      {asset.currentUserName ? ` · ${asset.currentUserName}` : ''}
+                    </Text>
                   </View>
                   <Text className={styles.pendingValue}>○</Text>
                 </View>
@@ -272,15 +457,27 @@ const InventoryDetailPage: React.FC = () => {
         </View>
 
         <View className={styles.bottomBar}>
-          <Button className={styles.backBtn} onClick={() => setShowReport(false)}>
-            返回
-          </Button>
-          <Button
-            className={styles.closeBtn}
-            onClick={() => Taro.navigateBack()}
-          >
-            关闭
-          </Button>
+          {autoShowReport ? (
+            <Button
+              className={styles.closeBtn}
+              style={{ flex: 1 }}
+              onClick={() => Taro.navigateBack()}
+            >
+              返回列表
+            </Button>
+          ) : (
+            <>
+              <Button className={styles.backBtn} onClick={() => setShowReport(false)}>
+                返回
+              </Button>
+              <Button
+                className={styles.closeBtn}
+                onClick={() => Taro.navigateBack()}
+              >
+                关闭
+              </Button>
+            </>
+          )}
         </View>
       </ScrollView>
     )
@@ -362,7 +559,7 @@ const InventoryDetailPage: React.FC = () => {
       {!isPending && (
         <View className={styles.assetList}>
           {filteredAssets.length > 0 ? (
-            filteredAssets.map((asset: Asset) => {
+            filteredAssets.map((asset: InventoryAssetSnapshot) => {
               const isChecked = task.checkedAssets.includes(asset.id)
               const isMissing = task.missingAssets.includes(asset.id)
 
@@ -378,6 +575,7 @@ const InventoryDetailPage: React.FC = () => {
                   onClick={() => handleCheckAsset(asset.id)}
                 >
                   <Checkbox
+                    value={asset.id}
                     checked={isChecked}
                     color="#00B42A"
                     disabled={isCompleted}

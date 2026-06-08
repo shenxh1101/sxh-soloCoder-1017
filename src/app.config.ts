@@ -13,7 +13,8 @@ export default defineAppConfig({
     'pages/inventory/index',
     'pages/qrcode/index',
     'pages/batch-owner/index',
-    'pages/inventory-detail/index'
+    'pages/inventory-detail/index',
+    'pages/inventory-create/index'
   ],
   window: {
     backgroundTextStyle: 'light',

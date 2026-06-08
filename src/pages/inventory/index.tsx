@@ -23,7 +23,7 @@ const InventoryPage: React.FC = () => {
     if (!task) return
 
     if (task.status === 'completed') {
-      Taro.navigateTo({ url: `/pages/inventory-detail/index?id=${taskId}` })
+      Taro.navigateTo({ url: `/pages/inventory-detail/index?id=${taskId}&report=1` })
       return
     }
 
@@ -79,6 +79,14 @@ const InventoryPage: React.FC = () => {
         }
       }
     )
+  }
+
+  const handleCreateTask = () => {
+    if (currentUser.role !== 'admin') {
+      Taro.showToast({ title: '仅管理员可创建盘点', icon: 'none' })
+      return
+    }
+    Taro.navigateTo({ url: '/pages/inventory-create/index' })
   }
 
   const handleExportReport = () => {
@@ -188,6 +196,11 @@ const InventoryPage: React.FC = () => {
       </View>
 
       <View className={styles.bottomBar}>
+        {currentUser.role === 'admin' && (
+          <Button className={styles.btnSecondary} onClick={handleCreateTask}>
+            新建盘点
+          </Button>
+        )}
         <Button className={styles.btnSecondary} onClick={handleExportReport}>
           导出报告
         </Button>

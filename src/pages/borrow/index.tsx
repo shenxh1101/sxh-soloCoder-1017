@@ -4,10 +4,11 @@ import Taro from '@tarojs/taro'
 import classnames from 'classnames'
 import { useAssetStore } from '@/store/useAssetStore'
 import AssetCard from '@/components/AssetCard'
-import EmptyState from '@/components/EmptyState'
 import StatusTag from '@/components/StatusTag'
-import type { Asset, ApprovalRecord, AssetStatus } from '@/types/asset'
+import EmptyState from '@/components/EmptyState'
+import type { Asset, ApprovalRecord } from '@/types/asset'
 import { RecordTypeMap } from '@/types/asset'
+import { handleAssetScan } from '@/utils/scan'
 import styles from './index.module.scss'
 
 const filterOptions = [
@@ -68,24 +69,14 @@ const BorrowPage: React.FC = () => {
 
   const handleScan = () => {
     console.log('[BorrowPage] 点击扫码')
-    Taro.scanCode({
-      onlyFromCamera: false,
-      scanType: ['qrCode', 'barCode'],
-      success: (res) => {
-        console.log('[BorrowPage] 扫码成功:', res.result)
-        const match = res.result.match(/id=([^&]+)/)
-        if (match) {
-          Taro.navigateTo({
-            url: `/pages/asset-detail/index?id=${match[1]}`
-          })
-        } else {
-          Taro.showToast({ title: '无效的资产二维码', icon: 'none' })
-        }
-      },
-      fail: (err) => {
-        console.error('[BorrowPage] 扫码失败:', err)
+    handleAssetScan(
+      (assetId) => {
+        console.log('[BorrowPage] 扫码成功，资产ID:', assetId)
+        Taro.navigateTo({
+          url: `/pages/asset-detail/index?id=${assetId}`
+        })
       }
-    })
+    )
   }
 
   const handleQuickBorrow = () => {

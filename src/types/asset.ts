@@ -74,12 +74,23 @@ export interface AssetRecord {
 export interface InventoryTask {
   id: string
   name: string
+  description: string
   creatorId: string
   creatorName: string
-  totalCount: number
-  checkedCount: number
-  status: 'pending' | 'processing' | 'completed'
+  totalAssets: number
+  checkedAssets: string[]
+  missingAssets: string[]
+  status: 'pending' | 'inProgress' | 'completed'
   createTime: string
+  startTime?: string
+  completeTime?: string
+  progress: number
+}
+
+export interface InventoryTaskUpdate {
+  taskId: string
+  checkedAssetIds: string[]
+  missingAssetIds: string[]
 }
 
 export interface StatsOverview {
@@ -88,6 +99,8 @@ export interface StatsOverview {
   inRepairAssets: number
   scrapAssets: number
   totalValue: number
+  depreciatedValue: number
+  borrowedCount: number
   dueSoonCount: number
   overdueCount: number
 }

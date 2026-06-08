@@ -2,14 +2,13 @@ import React, { useEffect } from 'react'
 import { View, Text, Button, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import classnames from 'classnames'
-import { inventoryTasks } from '@/data/mock-records'
 import { useAssetStore } from '@/store/useAssetStore'
 import { formatDate } from '@/utils/format'
+import { handleAssetScan } from '@/utils/scan'
 import styles from './index.module.scss'
 
 const InventoryPage: React.FC = () => {
-  const { getStats, currentUser } = useAssetStore()
-  const stats = getStats()
+  const { inventoryTasks, currentUser, startInventoryTask, checkInventoryAsset } = useAssetStore()
 
   const totalTasks = inventoryTasks.length
   const completedTasks = inventoryTasks.filter(t => t.status === 'completed').length
@@ -20,15 +19,59 @@ const InventoryPage: React.FC = () => {
   }, [])
 
   const handleStartTask = (taskId: string) => {
-    if (currentUser.role !== 'admin') {
+    const task = inventoryTasks.find(t => t.id === taskId)
+    if (!task) return
+
+    if (task.status === 'completed') {
+      Taro.navigateTo({ url: `/pages/inventory-detail/index?id=${taskId}` })
+      return
+    }
+
+    if (task.status === 'pending' && currentUser.role !== 'admin') {
       Taro.showToast({ title: '仅管理员可发起盘点', icon: 'none' })
       return
     }
-    Taro.showToast({ title: '盘点功能开发中', icon: 'none' })
+
+    if (task.status === 'pending') {
+      Taro.showModal({
+        title: '确认开始盘点',
+        content: `确定开始「${task.name}」吗？`,
+        success: (res) => {
+          if (res.confirm) {
+            startInventoryTask(taskId)
+            Taro.showToast({ title: '盘点已开始', icon: 'success' })
+            setTimeout(() => {
+              Taro.navigateTo({ url: `/pages/inventory-detail/index?id=${taskId}` })
+            }, 500)
+          }
+        }
+      })
+      return
+    }
+
+    Taro.navigateTo({ url: `/pages/inventory-detail/index?id=${taskId}` })
   }
 
   const handleScanInventory = () => {
-    Taro.showToast({ title: '扫码盘点功能开发中', icon: 'none' })
+    const inProgressTask = inventoryTasks.find(t => t.status === 'inProgress')
+    if (!inProgressTask) {
+      Taro.showToast({ title: '没有进行中的盘点任务', icon: 'none' })
+      return
+    }
+
+    handleAssetScan(
+      (assetId) => {
+        const task = inventoryTasks.find(t => t.status === 'inProgress')
+        if (task) {
+          if (task.checkedAssets.includes(assetId)) {
+            Taro.showToast({ title: '该资产已盘点', icon: 'none' })
+          } else {
+            checkInventoryAsset(task.id, assetId)
+            Taro.showToast({ title: '盘点成功', icon: 'success' })
+          }
+        }
+      }
+    )
   }
 
   const handleExportReport = () => {
@@ -36,7 +79,12 @@ const InventoryPage: React.FC = () => {
       Taro.showToast({ title: '仅管理员可导出', icon: 'none' })
       return
     }
-    Taro.showToast({ title: '导出功能开发中', icon: 'none' })
+    const completedTask = inventoryTasks.find(t => t.status === 'completed')
+    if (!completedTask) {
+      Taro.showToast({ title: '暂无已完成的盘点', icon: 'none' })
+      return
+    }
+    Taro.navigateTo({ url: `/pages/inventory-detail/index?id=${completedTask.id}` })
   }
 
   const getStatusText = (status: string) => {
@@ -93,11 +141,11 @@ const InventoryPage: React.FC = () => {
                   <Text className={styles.taskMetaLabel}>应盘资产</Text>
                 </View>
                 <View className={styles.taskMetaItem}>
-                  <Text className={styles.taskMetaValue} style={{ color: '#00B42A' }}>{task.checkedAssets}</Text>
+                  <Text className={styles.taskMetaValue} style={{ color: '#00B42A' }}>{task.checkedAssets.length}</Text>
                   <Text className={styles.taskMetaLabel}>已盘</Text>
                 </View>
                 <View className={styles.taskMetaItem}>
-                  <Text className={styles.taskMetaValue} style={{ color: '#F53F3F' }}>{task.missingAssets}</Text>
+                  <Text className={styles.taskMetaValue} style={{ color: '#F53F3F' }}>{task.missingAssets.length}</Text>
                   <Text className={styles.taskMetaLabel}>差异</Text>
                 </View>
               </View>

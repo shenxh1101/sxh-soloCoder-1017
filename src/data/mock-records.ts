@@ -173,11 +173,12 @@ export const inventoryTasks: InventoryTask[] = [
     creatorId: '6',
     creatorName: '孙八',
     totalAssets: 12,
-    checkedAssets: 9,
-    missingAssets: 1,
+    checkedAssets: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+    missingAssets: ['12'],
     progress: 75,
     status: 'inProgress',
-    createTime: '2024-06-01 00:00:00'
+    createTime: '2024-06-01 00:00:00',
+    startTime: '2024-06-01 09:00:00'
   },
   {
     id: '2',
@@ -186,11 +187,13 @@ export const inventoryTasks: InventoryTask[] = [
     creatorId: '1',
     creatorName: '张三',
     totalAssets: 6,
-    checkedAssets: 6,
-    missingAssets: 0,
+    checkedAssets: ['1', '2', '8', '11', '12', '7'],
+    missingAssets: [],
     progress: 100,
     status: 'completed',
-    createTime: '2024-05-15 00:00:00'
+    createTime: '2024-05-15 00:00:00',
+    startTime: '2024-05-15 09:00:00',
+    completeTime: '2024-05-15 17:00:00'
   },
   {
     id: '3',
@@ -199,11 +202,13 @@ export const inventoryTasks: InventoryTask[] = [
     creatorId: '6',
     creatorName: '孙八',
     totalAssets: 10,
-    checkedAssets: 10,
-    missingAssets: 0,
+    checkedAssets: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
+    missingAssets: [],
     progress: 100,
     status: 'completed',
-    createTime: '2024-04-01 00:00:00'
+    createTime: '2024-04-01 00:00:00',
+    startTime: '2024-04-01 09:00:00',
+    completeTime: '2024-04-02 17:00:00'
   }
 ]
 

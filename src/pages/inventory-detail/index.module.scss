@@ -1,0 +1,412 @@
+@import '@/styles/theme.scss';
+
+.page {
+  min-height: 100vh;
+  background: $color-bg-light;
+  padding-bottom: 140px;
+}
+
+.header {
+  background: linear-gradient(135deg, #722ED1 0%, #9254DE 100%);
+  padding: 48px 32px 32px;
+  color: #fff;
+}
+
+.headerTitle {
+  font-size: 36px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.headerSubtitle {
+  font-size: 26px;
+  opacity: 0.85;
+}
+
+.statsCard {
+  margin: -20px 32px 24px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.statItem {
+  text-align: center;
+}
+
+.statValue {
+  font-size: 36px;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.statLabel {
+  font-size: 22px;
+  color: $color-text-secondary;
+}
+
+.progressSection {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.progressLabel {
+  font-size: 24px;
+  color: $color-text-secondary;
+  flex-shrink: 0;
+}
+
+.progressBar {
+  flex: 1;
+  height: 16px;
+  background: $color-bg-light;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #722ED1, #9254DE);
+  border-radius: 8px;
+  transition: width 0.3s;
+}
+
+.progressText {
+  font-size: 24px;
+  color: $color-primary;
+  font-weight: 600;
+  flex-shrink: 0;
+  min-width: 60px;
+  text-align: right;
+}
+
+.startBanner {
+  margin: 24px 32px;
+  background: #FFF7E8;
+  border: 2px solid #FF7D00;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.startText {
+  font-size: 28px;
+  color: #FF7D00;
+  font-weight: 500;
+}
+
+.startBtn {
+  background: #FF7D00;
+  color: #fff;
+  height: 64px;
+  line-height: 64px;
+  font-size: 26px;
+  border-radius: 32px;
+  padding: 0 32px;
+}
+
+.filterSection {
+  padding: 0 32px 16px;
+  background: #fff;
+  margin-bottom: 16px;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  background: $color-bg-light;
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin: 24px 0 16px;
+}
+
+.searchIcon {
+  font-size: 28px;
+  margin-right: 16px;
+}
+
+.searchInput {
+  flex: 1;
+  font-size: 28px;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.filterTabs {
+  display: flex;
+  white-space: nowrap;
+  margin: 0 -8px;
+}
+
+.filterTab {
+  flex-shrink: 0;
+  padding: 16px 28px;
+  margin: 0 8px;
+  font-size: 26px;
+  color: $color-text-secondary;
+  background: $color-bg-light;
+  border-radius: 32px;
+  transition: all 0.2s;
+
+  &.active {
+    color: #fff;
+    background: $color-primary;
+  }
+}
+
+.assetList {
+  padding: 0 32px;
+}
+
+.assetCard {
+  display: flex;
+  align-items: flex-start;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+
+  &.checked {
+    border-color: #00B42A;
+    background: rgba(#00B42A, 0.03);
+  }
+
+  &.missing {
+    border-color: #F53F3F;
+    background: rgba(#F53F3F, 0.03);
+  }
+
+  &.disabled {
+    opacity: 0.7;
+  }
+}
+
+.assetInfo {
+  flex: 1;
+  margin-left: 20px;
+}
+
+.assetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.assetName {
+  font-size: 30px;
+  font-weight: 500;
+  color: $color-text-primary;
+}
+
+.assetCode {
+  font-size: 24px;
+  color: $color-text-placeholder;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.assetMeta {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 8px;
+}
+
+.assetCategory {
+  font-size: 24px;
+  color: $color-text-secondary;
+}
+
+.assetPrice {
+  font-size: 24px;
+  color: $color-primary;
+  font-weight: 500;
+}
+
+.assetOwner {
+  font-size: 24px;
+  color: $color-text-secondary;
+}
+
+.missingBtn {
+  flex-shrink: 0;
+  height: 56px;
+  line-height: 56px;
+  font-size: 22px;
+  background: $color-bg-light;
+  color: $color-text-secondary;
+  border-radius: 28px;
+  padding: 0 24px;
+  margin-left: 16px;
+
+  &.active {
+    background: #FFECE8;
+    color: #F53F3F;
+  }
+}
+
+.bottomBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 20px 32px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+  display: flex;
+  gap: 20px;
+}
+
+.scanBtn,
+.completeBtn,
+.reportBtn,
+.backBtn,
+.closeBtn {
+  flex: 1;
+  height: 80px;
+  line-height: 80px;
+  font-size: 28px;
+  border-radius: 40px;
+
+  &.disabled {
+    background: $color-text-placeholder;
+    opacity: 0.6;
+  }
+}
+
+.scanBtn {
+  background: #722ED1;
+  color: #fff;
+}
+
+.completeBtn {
+  background: #00B42A;
+  color: #fff;
+}
+
+.reportBtn {
+  background: #165DFF;
+  color: #fff;
+}
+
+.backBtn {
+  background: $color-bg-light;
+  color: $color-text-secondary;
+}
+
+.closeBtn {
+  background: $color-primary;
+  color: #fff;
+}
+
+.reportContent {
+  padding: 24px 32px;
+}
+
+.reportCard {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.reportLabel {
+  font-size: 24px;
+  color: $color-text-secondary;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.reportValue {
+  font-size: 30px;
+  color: $color-text-primary;
+  font-weight: 500;
+}
+
+.reportDesc {
+  font-size: 26px;
+  color: $color-text-primary;
+  line-height: 1.6;
+}
+
+.missingSection,
+.checkedSection {
+  margin-top: 24px;
+}
+
+.sectionTitle {
+  font-size: 28px;
+  font-weight: 600;
+  color: $color-text-primary;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.missingItem,
+.checkedItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 12px;
+}
+
+.missingItem {
+  border-left: 4px solid #F53F3F;
+}
+
+.checkedItem {
+  border-left: 4px solid #00B42A;
+}
+
+.missingInfo,
+.checkedInfo {
+  flex: 1;
+}
+
+.missingName,
+.checkedName {
+  font-size: 28px;
+  color: $color-text-primary;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.missingCode,
+.checkedCode {
+  font-size: 24px;
+  color: $color-text-secondary;
+}
+
+.missingValue {
+  font-size: 26px;
+  color: #F53F3F;
+  font-weight: 500;
+}
+
+.checkedValue {
+  font-size: 32px;
+  color: #00B42A;
+  font-weight: 600;
+}

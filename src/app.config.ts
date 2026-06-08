@@ -11,7 +11,9 @@ export default defineAppConfig({
     'pages/approval-detail/index',
     'pages/dept-stats/index',
     'pages/inventory/index',
-    'pages/qrcode/index'
+    'pages/qrcode/index',
+    'pages/batch-owner/index',
+    'pages/inventory-detail/index'
   ],
   window: {
     backgroundTextStyle: 'light',

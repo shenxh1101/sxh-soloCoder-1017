@@ -91,8 +91,137 @@ const QrcodePage: React.FC = () => {
       Taro.showToast({ title: '仅管理员可打印', icon: 'none' })
       return
     }
-    Taro.showToast({ title: '打印功能开发中', icon: 'none' })
+    if (!qrcodeUrl) {
+      Taro.showToast({ title: '二维码未生成', icon: 'none' })
+      return
+    }
+
     console.log('[QrcodePage] 打印二维码:', asset.code)
+
+    if (process.env.TARO_ENV === 'h5') {
+      const printWindow = window.open('', '_blank')
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>资产二维码 - ${asset.name}</title>
+            <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background: #fff;
+                padding: 20px;
+              }
+              .card {
+                width: 320px;
+                padding: 24px;
+                border: 2px solid #165DFF;
+                border-radius: 16px;
+                text-align: center;
+                background: #fff;
+              }
+              .title {
+                font-size: 20px;
+                font-weight: 600;
+                color: #1D2129;
+                margin-bottom: 4px;
+              }
+              .code {
+                font-size: 14px;
+                color: #86909C;
+                margin-bottom: 16px;
+              }
+              .qrcode {
+                width: 240px;
+                height: 240px;
+                margin: 0 auto 16px;
+                display: block;
+              }
+              .info {
+                padding: 12px;
+                background: #F2F3F5;
+                border-radius: 8px;
+                margin-top: 16px;
+              }
+              .info-row {
+                display: flex;
+                justify-content: space-between;
+                font-size: 13px;
+                padding: 4px 0;
+                color: #4E5969;
+              }
+              .info-label {
+                color: #86909C;
+              }
+              .footer {
+                margin-top: 16px;
+                font-size: 12px;
+                color: #C9CDD4;
+              }
+              @media print {
+                body { padding: 0; }
+                .card { border: 1px solid #165DFF; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <div class="title">${asset.name}</div>
+              <div class="code">${asset.code}</div>
+              <img class="qrcode" src="${qrcodeUrl}" alt="资产二维码" />
+              <div class="info">
+                <div class="info-row">
+                  <span class="info-label">资产分类</span>
+                  <span>${asset.category}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">资产价值</span>
+                  <span style="color: #165DFF; font-weight: 600;">¥${asset.price.toLocaleString()}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">存放位置</span>
+                  <span>${asset.location}</span>
+                </div>
+                ${asset.currentUserName ? `
+                <div class="info-row">
+                  <span class="info-label">使用人</span>
+                  <span>${asset.currentUserName}</span>
+                </div>` : ''}
+              </div>
+              <div class="footer">扫描二维码查看资产详情</div>
+            </div>
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                }, 500);
+              };
+            </script>
+          </body>
+          </html>
+        `)
+        printWindow.document.close()
+        console.log('[QrcodePage] 打印窗口已打开')
+      } else {
+        Taro.showToast({ title: '请允许弹出窗口', icon: 'none' })
+      }
+    } else {
+      Taro.showModal({
+        title: '打印二维码',
+        content: '当前平台暂不支持直接打印，是否保存二维码图片到相册后打印？',
+        confirmText: '保存图片',
+        success: (res) => {
+          if (res.confirm) {
+            handleSaveQRCode()
+          }
+        }
+      })
+    }
   }
 
   return (

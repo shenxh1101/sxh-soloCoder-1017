@@ -153,8 +153,12 @@ const ScanPage: React.FC = () => {
   }
 
   const handleBatchAdjust = () => {
-    console.log('[ScanPage] 批量调整负责人')
-    Taro.showToast({ title: '功能开发中...', icon: 'none' })
+    console.log('[ScanPage] 跳转批量调整负责人')
+    if (currentUser.role !== 'admin') {
+      Taro.showToast({ title: '仅管理员可操作', icon: 'none' })
+      return
+    }
+    Taro.navigateTo({ url: '/pages/batch-owner/index' })
   }
 
   const actionCards = [

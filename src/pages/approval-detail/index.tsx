@@ -49,12 +49,14 @@ const ApprovalDetailPage: React.FC = () => {
     if (!approval) return
 
     setLoading(true)
-    console.log('[ApprovalDetailPage] 审批通过:', approval.id)
+    console.log('[ApprovalDetailPage] 审批通过:', approval.id, '审批人:', currentUser.name)
 
     try {
-      approveApproval(approval.id)
+      approveApproval(approval.id, currentUser.id, currentUser.name)
       Taro.showToast({ title: '已通过', icon: 'success' })
-      setTimeout(() => Taro.navigateBack(), 1000)
+      setTimeout(() => {
+        Taro.navigateBack({ delta: 1 })
+      }, 1000)
     } catch (error) {
       console.error('[ApprovalDetailPage] 审批失败:', error)
       Taro.showToast({ title: '操作失败', icon: 'none' })
@@ -75,12 +77,14 @@ const ApprovalDetailPage: React.FC = () => {
     }
 
     setLoading(true)
-    console.log('[ApprovalDetailPage] 审批驳回:', approval.id, '原因:', rejectReason)
+    console.log('[ApprovalDetailPage] 审批驳回:', approval.id, '审批人:', currentUser.name, '原因:', rejectReason)
 
     try {
-      rejectApproval(approval.id, rejectReason.trim())
+      rejectApproval(approval.id, currentUser.id, currentUser.name, rejectReason.trim())
       Taro.showToast({ title: '已驳回', icon: 'success' })
-      setTimeout(() => Taro.navigateBack(), 1000)
+      setTimeout(() => {
+        Taro.navigateBack({ delta: 1 })
+      }, 1000)
     } catch (error) {
       console.error('[ApprovalDetailPage] 驳回失败:', error)
       Taro.showToast({ title: '操作失败', icon: 'none' })

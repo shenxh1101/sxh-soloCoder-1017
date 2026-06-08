@@ -7,6 +7,7 @@ import EmptyState from '@/components/EmptyState'
 import StatusTag from '@/components/StatusTag'
 import type { ApprovalRecord, RecordType, Asset } from '@/types/asset'
 import { RecordTypeMap } from '@/types/asset'
+import { handleAssetScan } from '@/utils/scan'
 import styles from './index.module.scss'
 
 type TabType = 'repair' | 'scrap'
@@ -92,20 +93,23 @@ const RepairPage: React.FC = () => {
   }
 
   const handleScan = () => {
-    Taro.scanCode({
-      success: (res) => {
-        console.log('[RepairPage] 扫码成功:', res.result)
-        const match = res.result.match(/id=([^&]+)/)
-        if (match) {
-          const asset = getAssetById(match[1])
-          if (asset) {
-            setSelectedAsset(asset.id)
-            setSelectedAssetIndex(availableAssets.findIndex(a => a.id === asset.id))
+    console.log('[RepairPage] 点击扫码选择资产')
+    handleAssetScan(
+      (assetId) => {
+        const asset = getAssetById(assetId)
+        if (asset) {
+          const assetIndex = availableAssets.findIndex(a => a.id === assetId)
+          if (assetIndex >= 0) {
+            setSelectedAsset(assetId)
+            setSelectedAssetIndex(assetIndex)
             setShowForm(true)
+            console.log('[RepairPage] 扫码选中资产:', asset.name)
+          } else {
+            Taro.showToast({ title: '该资产不可申请维修/报废', icon: 'none' })
           }
         }
       }
-    })
+    )
   }
 
   const actionCards = [

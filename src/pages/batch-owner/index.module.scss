@@ -1,0 +1,292 @@
+@import '@/styles/theme.scss';
+
+.page {
+  min-height: 100vh;
+  background: $color-bg-light;
+  padding-bottom: 160px;
+}
+
+.header {
+  background: linear-gradient(135deg, $color-primary 0%, #4080FF 100%);
+  padding: 48px 32px 32px;
+  color: #fff;
+}
+
+.headerTitle {
+  font-size: 36px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.headerSubtitle {
+  font-size: 26px;
+  opacity: 0.85;
+}
+
+.searchSection {
+  padding: 24px 32px 16px;
+  background: #fff;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  background: $color-bg-light;
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+
+.searchIcon {
+  font-size: 28px;
+  margin-right: 16px;
+}
+
+.searchInput {
+  flex: 1;
+  font-size: 28px;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.filterTabs {
+  display: flex;
+  white-space: nowrap;
+  margin: 0 -8px;
+}
+
+.filterTab {
+  flex-shrink: 0;
+  padding: 16px 28px;
+  margin: 0 8px;
+  font-size: 26px;
+  color: $color-text-secondary;
+  background: $color-bg-light;
+  border-radius: 32px;
+  transition: all 0.2s;
+
+  &.active {
+    color: #fff;
+    background: $color-primary;
+  }
+}
+
+.selectAllBar {
+  display: flex;
+  align-items: center;
+  padding: 20px 32px;
+  background: #fff;
+  border-bottom: 1px solid $color-border;
+}
+
+.selectAllText {
+  font-size: 26px;
+  color: $color-text-secondary;
+  margin-left: 16px;
+}
+
+.selectedCount {
+  margin-left: auto;
+  font-size: 26px;
+  color: $color-primary;
+  font-weight: 500;
+}
+
+.assetList {
+  padding: 16px 32px;
+}
+
+.assetCard {
+  display: flex;
+  align-items: flex-start;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+
+  &.selected {
+    border-color: $color-primary;
+    background: rgba($color-primary, 0.03);
+  }
+}
+
+.assetInfo {
+  flex: 1;
+  margin-left: 20px;
+}
+
+.assetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.assetName {
+  font-size: 30px;
+  font-weight: 500;
+  color: $color-text-primary;
+}
+
+.assetCode {
+  font-size: 24px;
+  color: $color-text-placeholder;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.assetMeta {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 8px;
+}
+
+.assetCategory {
+  font-size: 24px;
+  color: $color-text-secondary;
+}
+
+.assetPrice {
+  font-size: 24px;
+  color: $color-primary;
+  font-weight: 500;
+}
+
+.assetOwner {
+  font-size: 24px;
+  color: $color-text-secondary;
+}
+
+.bottomBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 20px 32px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.userSelect {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.userLabel {
+  font-size: 26px;
+  color: $color-text-secondary;
+  flex-shrink: 0;
+}
+
+.pickerWrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: $color-bg-light;
+  border-radius: 12px;
+  margin-left: 12px;
+}
+
+.pickerText {
+  font-size: 26px;
+  color: $color-text-primary;
+
+  &.placeholder {
+    color: $color-text-placeholder;
+  }
+}
+
+.pickerArrow {
+  font-size: 32px;
+  color: $color-text-placeholder;
+}
+
+.confirmBtn {
+  flex-shrink: 0;
+  height: 80px;
+  line-height: 80px;
+  font-size: 28px;
+  background: $color-primary;
+  color: #fff;
+  border-radius: 40px;
+  padding: 0 40px;
+
+  &.disabled {
+    background: $color-text-placeholder;
+  }
+}
+
+.confirmModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 0 48px;
+}
+
+.confirmContent {
+  background: #fff;
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+}
+
+.confirmTitle {
+  font-size: 32px;
+  font-weight: 600;
+  color: $color-text-primary;
+  text-align: center;
+  display: block;
+  margin-bottom: 24px;
+}
+
+.confirmDesc {
+  font-size: 28px;
+  color: $color-text-secondary;
+  text-align: center;
+  line-height: 1.6;
+  display: block;
+  margin-bottom: 32px;
+}
+
+.confirmButtons {
+  display: flex;
+  gap: 20px;
+}
+
+.cancelBtn,
+.okBtn {
+  flex: 1;
+  height: 80px;
+  line-height: 80px;
+  font-size: 28px;
+  border-radius: 40px;
+}
+
+.cancelBtn {
+  background: $color-bg-light;
+  color: $color-text-secondary;
+}
+
+.okBtn {
+  background: $color-primary;
+  color: #fff;
+}

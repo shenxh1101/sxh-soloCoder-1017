@@ -1,19 +1,21 @@
 import { create } from 'zustand'
-import type { Asset, ApprovalRecord, User, StatsOverview, AssetStatus, RecordType } from '@/types/asset'
+import type { Asset, ApprovalRecord, User, StatsOverview, AssetStatus, RecordType, InventoryTask } from '@/types/asset'
 import { mockAssets } from '@/data/mock-assets'
-import { mockApprovalRecords } from '@/data/mock-records'
+import { mockApprovalRecords, inventoryTasks } from '@/data/mock-records'
 import { mockCurrentUser, mockUsers } from '@/data/mock-users'
 import { generateId } from '@/utils/format'
 
 interface AssetState {
   assets: Asset[]
   approvals: ApprovalRecord[]
+  inventoryTasks: InventoryTask[]
   currentUser: User
   users: User[]
   loading: boolean
   getStats: () => StatsOverview
   getAssetById: (id: string) => Asset | undefined
   getApprovalById: (id: string) => ApprovalRecord | undefined
+  getInventoryTaskById: (id: string) => InventoryTask | undefined
   getMyAssets: () => Asset[]
   getMyApprovals: () => ApprovalRecord[]
   getPendingApprovals: () => ApprovalRecord[]
@@ -33,11 +35,16 @@ interface AssetState {
   approveApproval: (id: string, approverId: string, approverName: string) => void
   rejectApproval: (id: string, approverId: string, approverName: string, rejectReason: string) => void
   batchUpdateOwner: (assetIds: string[], userId: string, userName: string) => void
+  startInventoryTask: (taskId: string) => void
+  checkInventoryAsset: (taskId: string, assetId: string) => void
+  markInventoryMissing: (taskId: string, assetId: string) => void
+  completeInventoryTask: (taskId: string) => void
 }
 
 export const useAssetStore = create<AssetState>((set, get) => ({
   assets: mockAssets,
   approvals: mockApprovalRecords,
+  inventoryTasks: inventoryTasks,
   currentUser: mockCurrentUser,
   users: mockUsers,
   loading: false,
@@ -49,9 +56,32 @@ export const useAssetStore = create<AssetState>((set, get) => ({
 
     let dueSoonCount = 0
     let overdueCount = 0
+    let totalValue = 0
+    let depreciatedValue = 0
+
+    const calculateDepreciation = (asset: Asset): number => {
+      const purchaseDate = new Date(asset.purchaseDate)
+      const yearsUsed = (today.getTime() - purchaseDate.getTime()) / (365 * 24 * 60 * 60 * 1000)
+
+      let depreciationYears = 4
+      if (asset.category.includes('电子') || asset.category.includes('电脑') || asset.category.includes('设备')) {
+        depreciationYears = 3
+      } else if (asset.category.includes('家具') || asset.category.includes('办公')) {
+        depreciationYears = 5
+      }
+
+      const residualRate = 0.05
+      const annualDepreciationRate = (1 - residualRate) / depreciationYears
+      const depreciationRate = Math.min(yearsUsed * annualDepreciationRate, 1 - residualRate)
+
+      return Math.round(asset.price * (1 - depreciationRate))
+    }
 
     assets.forEach(asset => {
-      if (asset.expectedReturnDate) {
+      totalValue += asset.price
+      depreciatedValue += calculateDepreciation(asset)
+
+      if (asset.expectedReturnDate && asset.status === 'borrowed') {
         const returnDate = new Date(asset.expectedReturnDate)
         if (returnDate < today) {
           overdueCount++
@@ -61,12 +91,16 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       }
     })
 
+    const borrowedCount = assets.filter(a => a.status === 'borrowed').length
+
     return {
       totalAssets: assets.length,
-      borrowedAssets: assets.filter(a => a.status === 'borrowed').length,
+      borrowedAssets: borrowedCount,
       inRepairAssets: assets.filter(a => a.status === 'repair').length,
       scrapAssets: assets.filter(a => a.status === 'scrap').length,
-      totalValue: assets.reduce((sum, a) => sum + a.price, 0),
+      totalValue,
+      depreciatedValue,
+      borrowedCount,
       dueSoonCount,
       overdueCount
     }
@@ -222,5 +256,101 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       )
     }))
     console.log('[AssetStore] 批量调整负责人:', { assetIds, userId, userName })
+  },
+
+  getInventoryTaskById: (id: string): InventoryTask | undefined => {
+    return get().inventoryTasks.find(t => t.id === id)
+  },
+
+  startInventoryTask: (taskId: string): void => {
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19)
+    set(state => ({
+      inventoryTasks: state.inventoryTasks.map(task =>
+        task.id === taskId
+          ? {
+              ...task,
+              status: 'inProgress',
+              startTime: now,
+              progress: 0,
+              checkedAssets: [],
+              missingAssets: []
+            }
+          : task
+      )
+    }))
+    console.log('[AssetStore] 开始盘点任务:', taskId)
+  },
+
+  checkInventoryAsset: (taskId: string, assetId: string): void => {
+    set(state => {
+      const task = state.inventoryTasks.find(t => t.id === taskId)
+      if (!task) return state
+
+      const newCheckedAssets = task.checkedAssets.includes(assetId)
+        ? task.checkedAssets.filter(id => id !== assetId)
+        : [...task.checkedAssets, assetId]
+
+      const newMissingAssets = task.missingAssets.filter(id => id !== assetId)
+      const progress = Math.round((newCheckedAssets.length / task.totalAssets) * 100)
+
+      return {
+        inventoryTasks: state.inventoryTasks.map(t =>
+          t.id === taskId
+            ? {
+                ...t,
+                checkedAssets: newCheckedAssets,
+                missingAssets: newMissingAssets,
+                progress
+              }
+            : t
+        )
+      }
+    })
+    console.log('[AssetStore] 盘点资产:', { taskId, assetId })
+  },
+
+  markInventoryMissing: (taskId: string, assetId: string): void => {
+    set(state => {
+      const task = state.inventoryTasks.find(t => t.id === taskId)
+      if (!task) return state
+
+      const newMissingAssets = task.missingAssets.includes(assetId)
+        ? task.missingAssets.filter(id => id !== assetId)
+        : [...task.missingAssets, assetId]
+
+      const newCheckedAssets = task.checkedAssets.filter(id => id !== assetId)
+      const progress = Math.round((newCheckedAssets.length / task.totalAssets) * 100)
+
+      return {
+        inventoryTasks: state.inventoryTasks.map(t =>
+          t.id === taskId
+            ? {
+                ...t,
+                checkedAssets: newCheckedAssets,
+                missingAssets: newMissingAssets,
+                progress
+              }
+            : t
+        )
+      }
+    })
+    console.log('[AssetStore] 标记资产缺失:', { taskId, assetId })
+  },
+
+  completeInventoryTask: (taskId: string): void => {
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19)
+    set(state => ({
+      inventoryTasks: state.inventoryTasks.map(task =>
+        task.id === taskId
+          ? {
+              ...task,
+              status: 'completed',
+              completeTime: now,
+              progress: 100
+            }
+          : task
+      )
+    }))
+    console.log('[AssetStore] 完成盘点任务:', taskId)
   }
 }))

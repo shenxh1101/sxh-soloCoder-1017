@@ -348,7 +348,8 @@
 }
 
 .missingSection,
-.checkedSection {
+.checkedSection,
+.pendingSection {
   margin-top: 24px;
 }
 
@@ -361,7 +362,8 @@
 }
 
 .missingItem,
-.checkedItem {
+.checkedItem,
+.pendingItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -379,13 +381,19 @@
   border-left: 4px solid #00B42A;
 }
 
+.pendingItem {
+  border-left: 4px solid #86909C;
+}
+
 .missingInfo,
-.checkedInfo {
+.checkedInfo,
+.pendingInfo {
   flex: 1;
 }
 
 .missingName,
-.checkedName {
+.checkedName,
+.pendingName {
   font-size: 28px;
   color: $color-text-primary;
   font-weight: 500;
@@ -394,7 +402,8 @@
 }
 
 .missingCode,
-.checkedCode {
+.checkedCode,
+.pendingCode {
   font-size: 24px;
   color: $color-text-secondary;
 }
@@ -408,5 +417,11 @@
 .checkedValue {
   font-size: 32px;
   color: #00B42A;
+  font-weight: 600;
+}
+
+.pendingValue {
+  font-size: 32px;
+  color: #86909C;
   font-weight: 600;
 }

@@ -60,14 +60,21 @@ const InventoryPage: React.FC = () => {
     }
 
     handleAssetScan(
-      (assetId) => {
+      (assetId, assetData) => {
         const task = inventoryTasks.find(t => t.status === 'inProgress')
         if (task) {
-          if (task.checkedAssets.includes(assetId)) {
+          const isChecked = task.checkedAssets.includes(assetId)
+          const isMissing = task.missingAssets.includes(assetId)
+          
+          if (isChecked) {
             Taro.showToast({ title: '该资产已盘点', icon: 'none' })
           } else {
             checkInventoryAsset(task.id, assetId)
-            Taro.showToast({ title: '盘点成功', icon: 'success' })
+            if (isMissing) {
+              Taro.showToast({ title: `已从缺失转为已盘: ${assetData?.name || assetId}`, icon: 'success' })
+            } else {
+              Taro.showToast({ title: `盘点成功: ${assetData?.name || assetId}`, icon: 'success' })
+            }
           }
         }
       }
@@ -167,10 +174,9 @@ const InventoryPage: React.FC = () => {
                 <Button
                   className={classnames(
                     styles.actionBtn,
-                    task.status === 'completed' && styles.disabled
+                    task.status === 'completed' && styles.reportBtn
                   )}
                   onClick={() => handleStartTask(task.id)}
-                  disabled={task.status === 'completed'}
                 >
                   {task.status === 'pending' ? '开始盘点' :
                    task.status === 'inProgress' ? '继续盘点' : '查看报告'}

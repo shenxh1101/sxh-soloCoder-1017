@@ -286,12 +286,22 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       const task = state.inventoryTasks.find(t => t.id === taskId)
       if (!task) return state
 
-      const newCheckedAssets = task.checkedAssets.includes(assetId)
-        ? task.checkedAssets.filter(id => id !== assetId)
-        : [...task.checkedAssets, assetId]
+      const isAlreadyChecked = task.checkedAssets.includes(assetId)
+      const isInMissing = task.missingAssets.includes(assetId)
 
-      const newMissingAssets = task.missingAssets.filter(id => id !== assetId)
-      const progress = Math.round((newCheckedAssets.length / task.totalAssets) * 100)
+      let newCheckedAssets
+      let newMissingAssets
+
+      if (isAlreadyChecked) {
+        newCheckedAssets = task.checkedAssets.filter(id => id !== assetId)
+        newMissingAssets = [...task.missingAssets]
+      } else {
+        newCheckedAssets = [...task.checkedAssets, assetId]
+        newMissingAssets = task.missingAssets.filter(id => id !== assetId)
+      }
+
+      const processedCount = newCheckedAssets.length + newMissingAssets.length
+      const progress = Math.round((processedCount / task.totalAssets) * 100)
 
       return {
         inventoryTasks: state.inventoryTasks.map(t =>
@@ -314,12 +324,21 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       const task = state.inventoryTasks.find(t => t.id === taskId)
       if (!task) return state
 
-      const newMissingAssets = task.missingAssets.includes(assetId)
-        ? task.missingAssets.filter(id => id !== assetId)
-        : [...task.missingAssets, assetId]
+      const isAlreadyMissing = task.missingAssets.includes(assetId)
 
-      const newCheckedAssets = task.checkedAssets.filter(id => id !== assetId)
-      const progress = Math.round((newCheckedAssets.length / task.totalAssets) * 100)
+      let newMissingAssets
+      let newCheckedAssets
+
+      if (isAlreadyMissing) {
+        newMissingAssets = task.missingAssets.filter(id => id !== assetId)
+        newCheckedAssets = [...task.checkedAssets]
+      } else {
+        newMissingAssets = [...task.missingAssets, assetId]
+        newCheckedAssets = task.checkedAssets.filter(id => id !== assetId)
+      }
+
+      const processedCount = newCheckedAssets.length + newMissingAssets.length
+      const progress = Math.round((processedCount / task.totalAssets) * 100)
 
       return {
         inventoryTasks: state.inventoryTasks.map(t =>

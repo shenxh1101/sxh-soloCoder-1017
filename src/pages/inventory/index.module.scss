@@ -204,6 +204,10 @@
     background: $color-bg-light;
     color: $color-text-tertiary;
   }
+
+  &.reportBtn {
+    background: linear-gradient(135deg, #165DFF 0%, #4080FF 100%);
+  }
 }
 
 .bottomBar {

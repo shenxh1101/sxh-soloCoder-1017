@@ -82,14 +82,21 @@ const InventoryDetailPage: React.FC = () => {
       return
     }
     handleAssetScan(
-      (assetId) => {
+      (assetId, assetData) => {
         const asset = assets.find(a => a.id === assetId)
         if (asset) {
-          if (task.checkedAssets.includes(assetId)) {
+          const isChecked = task.checkedAssets.includes(assetId)
+          const isMissing = task.missingAssets.includes(assetId)
+          
+          if (isChecked) {
             Taro.showToast({ title: '该资产已盘点', icon: 'none' })
           } else {
             checkInventoryAsset(taskId, assetId)
-            Taro.showToast({ title: `已盘点: ${asset.name}`, icon: 'success' })
+            if (isMissing) {
+              Taro.showToast({ title: `已从缺失转为已盘: ${asset.name}`, icon: 'success' })
+            } else {
+              Taro.showToast({ title: `已盘点: ${asset.name}`, icon: 'success' })
+            }
           }
         }
       }
@@ -142,6 +149,12 @@ const InventoryDetailPage: React.FC = () => {
   ]
 
   if (showReport) {
+    const pendingAssets = assets.filter(asset => 
+      asset.status !== 'scrap' && 
+      !task.checkedAssets.includes(asset.id) && 
+      !task.missingAssets.includes(asset.id)
+    )
+
     return (
       <ScrollView scrollY className={styles.page}>
         <View className={styles.header}>
@@ -206,7 +219,7 @@ const InventoryDetailPage: React.FC = () => {
 
           {missingCount > 0 && (
             <View className={styles.missingSection}>
-              <Text className={styles.sectionTitle}>缺失资产清单</Text>
+              <Text className={styles.sectionTitle}>缺失资产清单 ({missingCount})</Text>
               {task.missingAssets.map(assetId => {
                 const asset = assets.find(a => a.id === assetId)
                 if (!asset) return null
@@ -225,7 +238,7 @@ const InventoryDetailPage: React.FC = () => {
 
           {checkedCount > 0 && (
             <View className={styles.checkedSection}>
-              <Text className={styles.sectionTitle}>已盘点资产</Text>
+              <Text className={styles.sectionTitle}>已盘点资产 ({checkedCount})</Text>
               {task.checkedAssets.map(assetId => {
                 const asset = assets.find(a => a.id === assetId)
                 if (!asset) return null
@@ -239,6 +252,21 @@ const InventoryDetailPage: React.FC = () => {
                   </View>
                 )
               })}
+            </View>
+          )}
+
+          {pendingCount > 0 && (
+            <View className={styles.pendingSection}>
+              <Text className={styles.sectionTitle}>待盘资产清单 ({pendingCount})</Text>
+              {pendingAssets.map(asset => (
+                <View key={asset.id} className={styles.pendingItem}>
+                  <View className={styles.pendingInfo}>
+                    <Text className={styles.pendingName}>{asset.name}</Text>
+                    <Text className={styles.pendingCode}>{asset.code}</Text>
+                  </View>
+                  <Text className={styles.pendingValue}>○</Text>
+                </View>
+              ))}
             </View>
           )}
         </View>

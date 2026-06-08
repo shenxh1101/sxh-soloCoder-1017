@@ -1,0 +1,195 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  padding-bottom: 140rpx;
+}
+
+.form {
+  padding: $spacing-lg $page-padding;
+}
+
+.formCard {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+.formTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-lg;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: $spacing-lg;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.formLabel {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-xs;
+}
+
+.formRequired {
+  color: $color-danger;
+  margin-right: $spacing-xs;
+}
+
+.formInput {
+  height: 80rpx;
+  padding: 0 $spacing-md;
+  background: $color-bg-light;
+  border-radius: $radius-md;
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  border: 2rpx solid transparent;
+  transition: all $transition-base;
+}
+
+.formTextarea {
+  min-height: 200rpx;
+  padding: $spacing-md;
+  background: $color-bg-light;
+  border-radius: $radius-md;
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  line-height: $line-height-normal;
+  border: 2rpx solid transparent;
+}
+
+.formRow {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.formHalf {
+  flex: 1;
+}
+
+.selectWrapper {
+  position: relative;
+}
+
+.selectPlaceholder {
+  color: $color-text-placeholder;
+}
+
+.uploadSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.uploadGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: $spacing-md;
+}
+
+.uploadItem {
+  aspect-ratio: 1;
+  position: relative;
+}
+
+.uploadImage {
+  width: 100%;
+  height: 100%;
+  border-radius: $radius-md;
+}
+
+.uploadRemove {
+  position: absolute;
+  top: -16rpx;
+  right: -16rpx;
+  width: 40rpx;
+  height: 40rpx;
+  background: $color-danger;
+  color: $color-text-white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+}
+
+.uploadBtn {
+  aspect-ratio: 1;
+  background: $color-bg-light;
+  border-radius: $radius-md;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx dashed $color-border;
+}
+
+.uploadPlus {
+  font-size: 56rpx;
+  color: $color-text-placeholder;
+  line-height: 1;
+}
+
+.uploadHint {
+  font-size: 22rpx;
+  color: $color-text-tertiary;
+  margin-top: $spacing-xs;
+}
+
+.bottomBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: $color-bg-card;
+  padding: $spacing-md $page-padding;
+  padding-bottom: calc(env(safe-area-inset-bottom) + #{$spacing-md});
+  display: flex;
+  gap: $spacing-md;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.08);
+}
+
+.btnCancel {
+  @include button-reset;
+  flex: 1;
+  height: $button-height-lg;
+  background: $color-bg-light;
+  color: $color-text-secondary;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  transition: all $transition-base;
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.btnSubmit {
+  @include button-reset;
+  flex: 2;
+  height: $button-height-lg;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  color: $color-text-white;
+  border-radius: $radius-button;
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  transition: all $transition-base;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+  }
+}

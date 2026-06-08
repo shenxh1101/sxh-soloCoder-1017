@@ -1,0 +1,27 @@
+@use '@/styles/variables.scss' as *;
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-sm;
+  padding: 0 $spacing-sm;
+  white-space: nowrap;
+}
+
+.sm {
+  height: 40rpx;
+  min-width: 64rpx;
+}
+
+.md {
+  height: 48rpx;
+  min-width: 80rpx;
+  padding: 0 $spacing-md;
+}
+
+.text {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  line-height: 1;
+}

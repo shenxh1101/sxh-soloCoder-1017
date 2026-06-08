@@ -10,7 +10,11 @@ import type {
   InventoryFilter,
   InventoryAssetSnapshot,
   InventoryReportSummary,
-  CreateInventoryTaskData
+  CreateInventoryTaskData,
+  InventoryAuditLog,
+  InventoryAuditAction,
+  InventoryExportType,
+  InventoryExportConfig
 } from '@/types/asset'
 import { mockAssets } from '@/data/mock-assets'
 import { mockApprovalRecords, inventoryTasks } from '@/data/mock-records'
@@ -52,9 +56,15 @@ interface AssetState {
   batchUpdateOwner: (assetIds: string[], userId: string, userName: string) => void
   createInventoryTask: (data: CreateInventoryTaskData) => InventoryTask
   startInventoryTask: (taskId: string) => void
-  checkInventoryAsset: (taskId: string, assetId: string) => void
+  checkInventoryAsset: (taskId: string, assetId: string, isScan?: boolean) => void
   markInventoryMissing: (taskId: string, assetId: string) => void
+  unmarkInventoryMissing: (taskId: string, assetId: string) => void
   completeInventoryTask: (taskId: string) => void
+  addInventoryAuditLog: (taskId: string, action: InventoryAuditAction, assetId?: string, remark?: string) => void
+  scanInventoryAsset: (taskId: string, assetId: string) => { success: boolean; message: string }
+  getLatestCompletedInventoryTask: () => InventoryTask | undefined
+  exportInventoryReport: (taskId: string, config: InventoryExportConfig) => string
+  isAssetInInventoryScope: (taskId: string, assetId: string) => boolean
 }
 
 export const useAssetStore = create<AssetState>((set, get) => ({
@@ -378,7 +388,8 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       status: 'pending',
       createTime: now,
       progress: 0,
-      assetSnapshot
+      assetSnapshot,
+      auditLogs: []
     }
 
     set(state => ({
@@ -394,6 +405,7 @@ export const useAssetStore = create<AssetState>((set, get) => ({
   },
 
   startInventoryTask: (taskId: string): void => {
+    const { addInventoryAuditLog } = get()
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19)
     set(state => ({
       inventoryTasks: state.inventoryTasks.map(task =>
@@ -409,15 +421,18 @@ export const useAssetStore = create<AssetState>((set, get) => ({
           : task
       )
     }))
+    addInventoryAuditLog(taskId, 'start')
     console.log('[AssetStore] 开始盘点任务:', taskId)
   },
 
-  checkInventoryAsset: (taskId: string, assetId: string): void => {
+  checkInventoryAsset: (taskId: string, assetId: string, isScan: boolean = false): void => {
+    const { addInventoryAuditLog } = get()
     set(state => {
       const task = state.inventoryTasks.find(t => t.id === taskId)
       if (!task) return state
 
       const isAlreadyChecked = task.checkedAssets.includes(assetId)
+      const wasMissing = task.missingAssets.includes(assetId)
 
       let newCheckedAssets
       let newMissingAssets
@@ -446,10 +461,15 @@ export const useAssetStore = create<AssetState>((set, get) => ({
         )
       }
     })
-    console.log('[AssetStore] 盘点资产:', { taskId, assetId })
+    
+    const action: InventoryAuditAction = isScan ? 'scan' : 'check'
+    const remark = wasMissing ? '从缺失转为已盘' : undefined
+    addInventoryAuditLog(taskId, action, assetId, remark)
+    console.log('[AssetStore] 盘点资产:', { taskId, assetId, isScan })
   },
 
   markInventoryMissing: (taskId: string, assetId: string): void => {
+    const { addInventoryAuditLog } = get()
     set(state => {
       const task = state.inventoryTasks.find(t => t.id === taskId)
       if (!task) return state
@@ -483,11 +503,40 @@ export const useAssetStore = create<AssetState>((set, get) => ({
         )
       }
     })
+    
+    addInventoryAuditLog(taskId, 'missing', assetId)
     console.log('[AssetStore] 标记资产缺失:', { taskId, assetId })
   },
 
+  unmarkInventoryMissing: (taskId: string, assetId: string): void => {
+    const { addInventoryAuditLog } = get()
+    set(state => {
+      const task = state.inventoryTasks.find(t => t.id === taskId)
+      if (!task) return state
+
+      const newMissingAssets = task.missingAssets.filter(id => id !== assetId)
+      const processedCount = task.checkedAssets.length + newMissingAssets.length
+      const progress = Math.round((processedCount / task.totalAssets) * 100)
+
+      return {
+        inventoryTasks: state.inventoryTasks.map(t =>
+          t.id === taskId
+            ? {
+                ...t,
+                missingAssets: newMissingAssets,
+                progress
+              }
+            : t
+        )
+      }
+    })
+    
+    addInventoryAuditLog(taskId, 'unmissing', assetId)
+    console.log('[AssetStore] 取消资产缺失:', { taskId, assetId })
+  },
+
   completeInventoryTask: (taskId: string): void => {
-    const { generateInventorySummary } = get()
+    const { generateInventorySummary, addInventoryAuditLog } = get()
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19)
     const summary = generateInventorySummary(taskId)
     set(state => ({
@@ -503,6 +552,159 @@ export const useAssetStore = create<AssetState>((set, get) => ({
           : task
       )
     }))
+    addInventoryAuditLog(taskId, 'complete')
     console.log('[AssetStore] 完成盘点任务:', taskId, '汇总数据已生成')
+  },
+
+  addInventoryAuditLog: (taskId: string, action: InventoryAuditAction, assetId?: string, remark?: string): void => {
+    const { currentUser, getInventoryTaskById } = get()
+    const task = getInventoryTaskById(taskId)
+    if (!task) return
+
+    const asset = assetId ? task.assetSnapshot.find(a => a.id === assetId) : undefined
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19)
+
+    const log: InventoryAuditLog = {
+      id: generateId(),
+      taskId,
+      action,
+      operatorId: currentUser.id,
+      operatorName: currentUser.name,
+      assetId,
+      assetName: asset?.name,
+      assetCode: asset?.code,
+      remark,
+      createTime: now
+    }
+
+    set(state => ({
+      inventoryTasks: state.inventoryTasks.map(t =>
+        t.id === taskId
+          ? { ...t, auditLogs: [...t.auditLogs, log] }
+          : t
+      )
+    }))
+    console.log('[AssetStore] 添加审计日志:', { taskId, action, assetId })
+  },
+
+  scanInventoryAsset: (taskId: string, assetId: string): { success: boolean; message: string } => {
+    const { isAssetInInventoryScope, checkInventoryAsset, getInventoryTaskById } = get()
+    const task = getInventoryTaskById(taskId)
+    
+    if (!task) {
+      return { success: false, message: '盘点任务不存在' }
+    }
+    
+    if (!isAssetInInventoryScope(taskId, assetId)) {
+      return { success: false, message: '该资产不在本次盘点范围内' }
+    }
+    
+    const isChecked = task.checkedAssets.includes(assetId)
+    if (isChecked) {
+      return { success: false, message: '该资产已盘点' }
+    }
+    
+    checkInventoryAsset(taskId, assetId, true)
+    const asset = task.assetSnapshot.find(a => a.id === assetId)
+    const isMissing = task.missingAssets.includes(assetId)
+    const message = isMissing 
+      ? `已从缺失转为已盘: ${asset?.name || assetId}`
+      : `盘点成功: ${asset?.name || assetId}`
+    
+    return { success: true, message }
+  },
+
+  getLatestCompletedInventoryTask: (): InventoryTask | undefined => {
+    const { inventoryTasks } = get()
+    return inventoryTasks
+      .filter(t => t.status === 'completed')
+      .sort((a, b) => new Date(b.completeTime || '').getTime() - new Date(a.completeTime || '').getTime())[0]
+  },
+
+  isAssetInInventoryScope: (taskId: string, assetId: string): boolean => {
+    const task = get().getInventoryTaskById(taskId)
+    if (!task) return false
+    return task.assetSnapshot.some(a => a.id === assetId)
+  },
+
+  exportInventoryReport: (taskId: string, config: InventoryExportConfig): string => {
+    const { getInventoryTaskById } = get()
+    const task = getInventoryTaskById(taskId)
+    if (!task) return ''
+
+    const { assetSnapshot, checkedAssets, missingAssets } = task
+    const formatPrice = (price: number) => `¥${price.toLocaleString()}`
+    
+    let content = `# 资产盘点报告\n\n`
+    content += `## 基本信息\n\n`
+    content += `- **任务名称**: ${task.name}\n`
+    content += `- **任务描述**: ${task.description}\n`
+    content += `- **盘点范围**: ${task.filter.department || task.filter.location || task.filter.category || '全公司'}\n`
+    content += `- **包含报废资产**: ${task.filter.includeScrap ? '是' : '否'}\n`
+    content += `- **创建人**: ${task.creatorName}\n`
+    content += `- **创建时间**: ${task.createTime}\n`
+    content += `- **完成时间**: ${task.completeTime || '-'}\n`
+    content += `- **完成操作人**: ${task.auditLogs.find(l => l.action === 'complete')?.operatorName || '-'}\n\n`
+
+    content += `## 汇总统计\n\n`
+    const totalCount = assetSnapshot.length
+    const checkedCount = checkedAssets.length
+    const missingCount = missingAssets.length
+    const pendingCount = totalCount - checkedCount - missingCount
+    const totalValue = assetSnapshot.reduce((sum, a) => sum + a.price, 0)
+    const checkedValue = assetSnapshot.filter(a => checkedAssets.includes(a.id)).reduce((sum, a) => sum + a.price, 0)
+    const missingValue = assetSnapshot.filter(a => missingAssets.includes(a.id)).reduce((sum, a) => sum + a.price, 0)
+    const pendingValue = assetSnapshot.filter(a => !checkedAssets.includes(a.id) && !missingAssets.includes(a.id)).reduce((sum, a) => sum + a.price, 0)
+    
+    content += `| 类别 | 数量 | 金额 |\n`
+    content += `|------|------|------|\n`
+    content += `| 总计 | ${totalCount} | ${formatPrice(totalValue)} |\n`
+    content += `| 已盘 | ${checkedCount} | ${formatPrice(checkedValue)} |\n`
+    content += `| 缺失 | ${missingCount} | ${formatPrice(missingValue)} |\n`
+    content += `| 待盘 | ${pendingCount} | ${formatPrice(pendingValue)} |\n\n`
+
+    const renderAssetTable = (assets: InventoryAssetSnapshot[], title: string) => {
+      if (assets.length === 0) return ''
+      let table = `## ${title} (${assets.length}件)\n\n`
+      table += `| 资产编号 | 资产名称 | 类别 | 位置 | 部门 | 使用人 | 金额 |\n`
+      table += `|----------|----------|------|------|------|--------|------|\n`
+      assets.forEach(a => {
+        table += `| ${a.code} | ${a.name} | ${a.category} | ${a.location} | ${a.department} | ${a.currentUserName || '-'} | ${formatPrice(a.price)} |\n`
+      })
+      table += '\n'
+      return table
+    }
+
+    if (config.type === 'full') {
+      content += renderAssetTable(assetSnapshot.filter(a => checkedAssets.includes(a.id)), '已盘资产')
+      content += renderAssetTable(assetSnapshot.filter(a => missingAssets.includes(a.id)), '缺失资产')
+      content += renderAssetTable(assetSnapshot.filter(a => !checkedAssets.includes(a.id) && !missingAssets.includes(a.id)), '待盘资产')
+    } else if (config.type === 'missing') {
+      content += renderAssetTable(assetSnapshot.filter(a => missingAssets.includes(a.id)), '缺失资产')
+    } else if (config.type === 'byDepartment') {
+      const deptMap = new Map<string, InventoryAssetSnapshot[]>()
+      assetSnapshot.forEach(a => {
+        if (!deptMap.has(a.department)) deptMap.set(a.department, [])
+        deptMap.get(a.department)!.push(a)
+      })
+      deptMap.forEach((assets, dept) => {
+        if (config.groupName && config.groupName !== dept) return
+        content += renderAssetTable(assets, `部门: ${dept}`)
+      })
+    } else if (config.type === 'byLocation') {
+      const locMap = new Map<string, InventoryAssetSnapshot[]>()
+      assetSnapshot.forEach(a => {
+        if (!locMap.has(a.location)) locMap.set(a.location, [])
+        locMap.get(a.location)!.push(a)
+      })
+      locMap.forEach((assets, loc) => {
+        if (config.groupName && config.groupName !== loc) return
+        content += renderAssetTable(assets, `位置: ${loc}`)
+      })
+    }
+
+    content += `---\n*本报告由资产管理系统自动生成于 ${new Date().toISOString().replace('T', ' ').substring(0, 19)}*\n`
+    
+    return content
   }
 }))

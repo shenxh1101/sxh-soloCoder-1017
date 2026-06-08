@@ -209,7 +209,14 @@ export const inventoryTasks: InventoryTask[] = [
     status: 'inProgress',
     createTime: '2024-06-01 00:00:00',
     startTime: '2024-06-01 09:00:00',
-    assetSnapshot: createAssetSnapshot(filterAssets(mockAssets, fullFilter))
+    assetSnapshot: createAssetSnapshot(filterAssets(mockAssets, fullFilter)),
+    auditLogs: [
+      { id: 'log1', taskId: '1', action: 'start', operatorId: '6', operatorName: '孙八', createTime: '2024-06-01 09:00:00', remark: '开始盘点任务' },
+      { id: 'log2', taskId: '1', action: 'scan', operatorId: '6', operatorName: '孙八', assetId: '1', assetName: 'MacBook Pro 14寸', assetCode: 'AST-2024-001', createTime: '2024-06-01 09:05:00' },
+      { id: 'log3', taskId: '1', action: 'check', operatorId: '6', operatorName: '孙八', assetId: '2', assetName: 'Dell XPS 13', assetCode: 'AST-2024-002', createTime: '2024-06-01 09:10:00' },
+      { id: 'log4', taskId: '1', action: 'scan', operatorId: '6', operatorName: '孙八', assetId: '3', assetName: '华为 MateBook X Pro', assetCode: 'AST-2024-003', createTime: '2024-06-01 09:15:00' },
+      { id: 'log5', taskId: '1', action: 'missing', operatorId: '6', operatorName: '孙八', assetId: '12', assetName: '人体工学办公椅', assetCode: 'AST-2024-012', createTime: '2024-06-01 10:30:00', remark: '工位上未找到' }
+    ]
   },
   {
     id: '2',
@@ -238,7 +245,13 @@ export const inventoryTasks: InventoryTask[] = [
       byLocation: [
         { name: '研发部-3楼-A区', count: 2, totalValue: 17598, assets: [] }
       ]
-    }
+    },
+    auditLogs: [
+      { id: 'log1', taskId: '2', action: 'start', operatorId: '1', operatorName: '张三', createTime: '2024-05-15 09:00:00', remark: '开始盘点任务' },
+      { id: 'log2', taskId: '2', action: 'scan', operatorId: '1', operatorName: '张三', assetId: '1', assetName: 'MacBook Pro 14寸', assetCode: 'AST-2024-001', createTime: '2024-05-15 09:10:00' },
+      { id: 'log3', taskId: '2', action: 'scan', operatorId: '1', operatorName: '张三', assetId: '12', assetName: '人体工学办公椅', assetCode: 'AST-2024-012', createTime: '2024-05-15 09:20:00' },
+      { id: 'log4', taskId: '2', action: 'complete', operatorId: '1', operatorName: '张三', createTime: '2024-05-15 17:00:00', remark: '所有资产已盘点完成' }
+    ]
   },
   {
     id: '3',
@@ -281,7 +294,17 @@ export const inventoryTasks: InventoryTask[] = [
         { name: '市场部-外拍中', count: 1, totalValue: 21888, assets: [] },
         { name: '机房-2楼', count: 1, totalValue: 8999, assets: [] }
       ]
-    }
+    },
+    auditLogs: [
+      { id: 'log1', taskId: '3', action: 'start', operatorId: '6', operatorName: '孙八', createTime: '2024-04-01 09:00:00', remark: '开始盘点任务' },
+      { id: 'log2', taskId: '3', action: 'scan', operatorId: '6', operatorName: '孙八', assetId: '1', assetName: 'MacBook Pro 14寸', assetCode: 'AST-2024-001', createTime: '2024-04-01 09:05:00' },
+      { id: 'log3', taskId: '3', action: 'check', operatorId: '6', operatorName: '孙八', assetId: '2', assetName: 'Dell XPS 13', assetCode: 'AST-2024-002', createTime: '2024-04-01 09:10:00' },
+      { id: 'log4', taskId: '3', action: 'scan', operatorId: '6', operatorName: '孙八', assetId: '3', assetName: '华为 MateBook X Pro', assetCode: 'AST-2024-003', createTime: '2024-04-01 09:15:00' },
+      { id: 'log5', taskId: '3', action: 'missing', operatorId: '6', operatorName: '孙八', assetId: '12', assetName: '人体工学办公椅', assetCode: 'AST-2024-012', createTime: '2024-04-01 14:30:00', remark: '工位上未找到' },
+      { id: 'log6', taskId: '3', action: 'unmissing', operatorId: '1', operatorName: '张三', assetId: '12', assetName: '人体工学办公椅', assetCode: 'AST-2024-012', createTime: '2024-04-02 10:00:00', remark: '在会议室找到' },
+      { id: 'log7', taskId: '3', action: 'check', operatorId: '1', operatorName: '张三', assetId: '12', assetName: '人体工学办公椅', assetCode: 'AST-2024-012', createTime: '2024-04-02 10:05:00' },
+      { id: 'log8', taskId: '3', action: 'complete', operatorId: '6', operatorName: '孙八', createTime: '2024-04-02 17:00:00', remark: '所有资产已盘点完成' }
+    ]
   }
 ]
 

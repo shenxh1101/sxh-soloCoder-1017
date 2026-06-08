@@ -98,6 +98,28 @@ export interface InventorySummaryItem {
   assets: InventoryAssetSnapshot[]
 }
 
+export type InventoryAuditAction = 'start' | 'check' | 'missing' | 'unmissing' | 'scan' | 'complete' | 'restart'
+
+export interface InventoryAuditLog {
+  id: string
+  taskId: string
+  action: InventoryAuditAction
+  operatorId: string
+  operatorName: string
+  assetId?: string
+  assetName?: string
+  assetCode?: string
+  remark?: string
+  createTime: string
+}
+
+export type InventoryExportType = 'full' | 'missing' | 'byDepartment' | 'byLocation'
+
+export interface InventoryExportConfig {
+  type: InventoryExportType
+  groupName?: string
+}
+
 export interface InventoryReportSummary {
   totalValue: number
   checkedValue: number
@@ -123,6 +145,7 @@ export interface InventoryTask {
   completeTime?: string
   progress: number
   assetSnapshot: InventoryAssetSnapshot[]
+  auditLogs: InventoryAuditLog[]
   summary?: InventoryReportSummary
 }
 
@@ -168,4 +191,21 @@ export const RecordTypeMap: Record<RecordType, { label: string; color: string }>
   return: { label: '归还', color: '#00B42A' },
   repair: { label: '维修', color: '#FF7D00' },
   scrap: { label: '报废', color: '#F53F3F' }
+}
+
+export const InventoryAuditActionMap: Record<InventoryAuditAction, { label: string; color: string; icon: string }> = {
+  start: { label: '开始盘点', color: '#165DFF', icon: '▶' },
+  check: { label: '手动盘点', color: '#00B42A', icon: '✓' },
+  missing: { label: '标记缺失', color: '#F53F3F', icon: '!' },
+  unmissing: { label: '取消缺失', color: '#FF7D00', icon: '↩' },
+  scan: { label: '扫码盘点', color: '#722ED1', icon: '📷' },
+  complete: { label: '完成盘点', color: '#00B42A', icon: '✅' },
+  restart: { label: '重新开始', color: '#FF7D00', icon: '🔄' }
+}
+
+export const InventoryExportTypeMap: Record<InventoryExportType, { label: string; desc: string }> = {
+  full: { label: '完整报告', desc: '包含所有资产和统计数据' },
+  missing: { label: '缺失清单', desc: '仅导出标记为缺失的资产' },
+  byDepartment: { label: '按部门导出', desc: '按部门分组导出明细' },
+  byLocation: { label: '按位置导出', desc: '按存放位置分组导出明细' }
 }

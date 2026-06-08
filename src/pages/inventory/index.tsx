@@ -8,7 +8,7 @@ import { handleAssetScan } from '@/utils/scan'
 import styles from './index.module.scss'
 
 const InventoryPage: React.FC = () => {
-  const { inventoryTasks, currentUser, startInventoryTask, checkInventoryAsset } = useAssetStore()
+  const { inventoryTasks, currentUser, startInventoryTask, scanInventoryAsset, getLatestCompletedInventoryTask } = useAssetStore()
 
   const totalTasks = inventoryTasks.length
   const completedTasks = inventoryTasks.filter(t => t.status === 'completed').length
@@ -60,22 +60,14 @@ const InventoryPage: React.FC = () => {
     }
 
     handleAssetScan(
-      (assetId, assetData) => {
+      (assetId) => {
         const task = inventoryTasks.find(t => t.status === 'inProgress')
         if (task) {
-          const isChecked = task.checkedAssets.includes(assetId)
-          const isMissing = task.missingAssets.includes(assetId)
-          
-          if (isChecked) {
-            Taro.showToast({ title: '该资产已盘点', icon: 'none' })
-          } else {
-            checkInventoryAsset(task.id, assetId)
-            if (isMissing) {
-              Taro.showToast({ title: `已从缺失转为已盘: ${assetData?.name || assetId}`, icon: 'success' })
-            } else {
-              Taro.showToast({ title: `盘点成功: ${assetData?.name || assetId}`, icon: 'success' })
-            }
-          }
+          const result = scanInventoryAsset(task.id, assetId)
+          Taro.showToast({ 
+            title: result.message, 
+            icon: result.success ? 'success' : 'none' 
+          })
         }
       }
     )
@@ -94,12 +86,12 @@ const InventoryPage: React.FC = () => {
       Taro.showToast({ title: '仅管理员可导出', icon: 'none' })
       return
     }
-    const completedTask = inventoryTasks.find(t => t.status === 'completed')
-    if (!completedTask) {
+    const latestTask = getLatestCompletedInventoryTask()
+    if (!latestTask) {
       Taro.showToast({ title: '暂无已完成的盘点', icon: 'none' })
       return
     }
-    Taro.navigateTo({ url: `/pages/inventory-detail/index?id=${completedTask.id}` })
+    Taro.navigateTo({ url: `/pages/inventory-detail/index?id=${latestTask.id}&report=1` })
   }
 
   const getStatusText = (status: string) => {

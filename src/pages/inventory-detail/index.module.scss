@@ -544,3 +544,233 @@
   font-weight: 500;
   margin-top: 4px;
 }
+
+.reportPage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: $color-bg-light;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.reportHeader {
+  background: linear-gradient(135deg, #722ED1 0%, #9254DE 100%);
+  padding: 48px 32px 32px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.reportTitle {
+  font-size: 36px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.reportSubtitle {
+  font-size: 26px;
+  opacity: 0.85;
+}
+
+.reportTabBar {
+  display: flex;
+  background: #fff;
+  padding: 0 32px;
+  border-bottom: 1px solid $color-border;
+  flex-shrink: 0;
+}
+
+.reportTab {
+  flex: 1;
+  padding: 24px 0;
+  text-align: center;
+  font-size: 28px;
+  color: $color-text-secondary;
+  position: relative;
+
+  &.reportTabActive {
+    color: $color-primary;
+    font-weight: 500;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 48px;
+      height: 4px;
+      background: $color-primary;
+      border-radius: 2px;
+    }
+  }
+}
+
+.reportScroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+}
+
+.auditContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+}
+
+.auditItem {
+  display: flex;
+  align-items: flex-start;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.auditIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  flex-shrink: 0;
+  margin-right: 20px;
+}
+
+.auditInfo {
+  flex: 1;
+}
+
+.auditHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.auditAction {
+  font-size: 28px;
+  font-weight: 500;
+}
+
+.auditTime {
+  font-size: 22px;
+  color: $color-text-placeholder;
+}
+
+.auditOperator {
+  font-size: 24px;
+  color: $color-text-secondary;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.auditAsset {
+  font-size: 24px;
+  color: $color-text-secondary;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.auditRemark {
+  font-size: 24px;
+  color: $color-text-placeholder;
+  display: block;
+}
+
+.exportBtn {
+  background: #165DFF;
+  color: #fff;
+  height: 80px;
+  line-height: 80px;
+  font-size: 28px;
+  border-radius: 40px;
+  flex: 1;
+}
+
+.exportMenu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.exportMenuMask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.exportMenuContent {
+  position: relative;
+  width: 100%;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 32px;
+  padding-bottom: calc(32px + env(safe-area-inset-bottom));
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.exportMenuTitle {
+  font-size: 30px;
+  font-weight: 600;
+  color: $color-text-primary;
+  text-align: center;
+  display: block;
+  margin-bottom: 24px;
+}
+
+.exportMenuItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 16px;
+  border-bottom: 1px solid $color-border;
+
+  &:last-of-type {
+    border-bottom: none;
+  }
+}
+
+.exportItemLabel {
+  font-size: 28px;
+  color: $color-text-primary;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.exportItemDesc {
+  font-size: 24px;
+  color: $color-text-placeholder;
+}
+
+.exportArrow {
+  font-size: 32px;
+  color: $color-text-placeholder;
+}
+
+.exportMenuCancel {
+  margin-top: 24px;
+  padding: 24px;
+  text-align: center;
+  font-size: 28px;
+  color: $color-text-secondary;
+  background: $color-bg-light;
+  border-radius: 16px;
+}

@@ -40,8 +40,17 @@ const InventoryCreatePage: React.FC = () => {
     return Array.from(catSet).sort()
   }, [assets])
 
+  const isFilterComplete = useMemo(() => {
+    if (filterType === 'all') return true
+    if (filterType === 'department') return selectedDept !== ''
+    if (filterType === 'location') return selectedLocation !== ''
+    if (filterType === 'category') return selectedCategory !== ''
+    return false
+  }, [filterType, selectedDept, selectedLocation, selectedCategory])
+
   const filter: InventoryFilter = useMemo(() => {
     const f: InventoryFilter = { includeScrap }
+    if (!isFilterComplete) return f
     if (filterType === 'department' && selectedDept) {
       f.department = selectedDept
     } else if (filterType === 'location' && selectedLocation) {
@@ -50,17 +59,29 @@ const InventoryCreatePage: React.FC = () => {
       f.category = selectedCategory
     }
     return f
-  }, [filterType, selectedDept, selectedLocation, selectedCategory, includeScrap])
+  }, [filterType, selectedDept, selectedLocation, selectedCategory, includeScrap, isFilterComplete])
 
   const previewAssets = useMemo(() => {
+    if (!isFilterComplete) return []
     return filterAssetsForInventory(filter)
-  }, [filter, filterAssetsForInventory])
+  }, [filter, filterAssetsForInventory, isFilterComplete])
 
   const totalValue = useMemo(() => {
     return previewAssets.reduce((sum, a) => sum + a.price, 0)
   }, [previewAssets])
 
-  const canSubmit = taskName.trim() !== '' && previewAssets.length > 0
+  const canSubmit = taskName.trim() !== '' && isFilterComplete && previewAssets.length > 0
+
+  const getSubmitError = () => {
+    if (taskName.trim() === '') return '请填写任务名称'
+    if (!isFilterComplete) {
+      if (filterType === 'department') return '请选择具体部门'
+      if (filterType === 'location') return '请选择具体位置'
+      if (filterType === 'category') return '请选择具体类别'
+    }
+    if (previewAssets.length === 0) return '当前筛选条件下没有资产'
+    return ''
+  }
 
   const handleSubmit = () => {
     if (currentUser.role !== 'admin') {
@@ -68,8 +89,9 @@ const InventoryCreatePage: React.FC = () => {
       return
     }
 
-    if (!canSubmit) {
-      Taro.showToast({ title: '请填写任务名称', icon: 'none' })
+    const error = getSubmitError()
+    if (error) {
+      Taro.showToast({ title: error, icon: 'none' })
       return
     }
 
@@ -269,7 +291,11 @@ const InventoryCreatePage: React.FC = () => {
 
         {showPreview && (
           <View className={styles.previewContent}>
-            {previewAssets.length > 0 ? (
+            {!isFilterComplete ? (
+              <View className={styles.previewEmpty}>
+                <Text>请先选择具体的{filterType === 'department' ? '部门' : filterType === 'location' ? '位置' : '类别'}</Text>
+              </View>
+            ) : previewAssets.length > 0 ? (
               previewAssets.map(asset => (
                 <View key={asset.id} className={styles.previewItem}>
                   <View className={styles.previewItemInfo}>
